@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  petpaw:
+    build: .
+    container_name: petpaw
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run dev
+    depends_on:
+      - mongo
+    networks:
+      - petpaw-net
+
+networks:
+  petpaw-net:

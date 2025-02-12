@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-template
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-template
+  template:
+    metadata:
+      labels:
+        app: service-template
+    spec:
+      containers:
+        - name: service-template
+          image: ./Dockerfile
+          ports:
+            - containerPort: 3000

@@ -1,0 +1,7 @@
+{
+  "watch": ["src/**/*.ts"],
+  "ignore": ["**/*.test.ts", "**/*.spec.ts", "node_modules"],
+  "ext": "ts,json",
+  "exec": "ts-node -r tsconfig-paths/register src/main.ts",
+  "legacyWatch": true
+}

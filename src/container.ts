@@ -1,0 +1,36 @@
+import { Container } from 'inversify';
+import { TYPES } from './constants/types';
+import type {
+  TMongoClient,
+  TAuthService,
+  TPetsService,
+  TAuthController,
+  TPetsController,
+  TApp,
+  TConfig,
+  TLogger,
+} from './types/container';
+import { MongoClient } from './libs/database/mongo';
+import { AuthService } from './modules/auth/auth.service';
+import { PetsService } from './modules/pets/pets.service';
+import { App } from './App';
+import { Config } from './config';
+import { AuthController } from './modules/auth/auth.controller';
+import { PetsController } from './modules/pets/pets.controller';
+import { Logger } from './libs/Logger';
+
+const container = new Container();
+
+container.bind<TConfig>(TYPES.Config).to(Config).inSingletonScope();
+container.bind<TLogger>(TYPES.Logger).to(Logger).inSingletonScope();
+container
+  .bind<TMongoClient>(TYPES.MongoClient)
+  .to(MongoClient)
+  .inSingletonScope();
+container.bind<TAuthService>(TYPES.AuthService).to(AuthService);
+container.bind<TPetsService>(TYPES.PetsService).to(PetsService);
+container.bind<TAuthController>(TYPES.AuthController).to(AuthController);
+container.bind<TPetsController>(TYPES.PetsController).to(PetsController);
+container.bind<TApp>(TYPES.App).to(App).inSingletonScope();
+
+export { container };
