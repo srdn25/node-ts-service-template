@@ -4,6 +4,7 @@ import { inject, injectable } from 'inversify';
 import { TYPES } from './constants/types';
 import {
   TAuthController,
+  TConfig,
   TLogger,
   TMongoClient,
   TPetsController,
@@ -17,10 +18,11 @@ export class App {
   private readonly router: Router = Router({ mergeParams: true });
 
   constructor(
-    @inject(TYPES.MongoClient) private mongoClient: TMongoClient,
-    @inject(TYPES.AuthController) private authController: TAuthController,
-    @inject(TYPES.PetsController) private petsController: TPetsController,
-    @inject(TYPES.Logger) private logger: TLogger,
+    @inject(TYPES.Config) private readonly config: TConfig,
+    @inject(TYPES.MongoClient) private readonly mongoClient: TMongoClient,
+    @inject(TYPES.AuthController) private readonly authController: TAuthController,
+    @inject(TYPES.PetsController) private readonly petsController: TPetsController,
+    @inject(TYPES.Logger) private readonly logger: TLogger,
   ) {
     this.app = express();
   }
@@ -46,8 +48,8 @@ export class App {
     this.setupHandlerMiddlewares();
 
     await this.mongoClient.connect();
-    this.server = this.app.listen(3000, () =>
-      this.logger.info('Server running on port 3000'),
+    this.server = this.app.listen(this.config.values.PORT, () =>
+      this.logger.info(`Server running on port ${this.config.values.PORT}`),
     );
   }
 
