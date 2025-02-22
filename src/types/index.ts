@@ -1,6 +1,5 @@
 import { Types } from 'mongoose';
 export type { User } from '@/entities/user.entity';
-export type { Pet } from '@/entities/pet.entity';
 
 export type TMongoObjectId = Types.ObjectId;
 export const MongoObjectId = Types.ObjectId;

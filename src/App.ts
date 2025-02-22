@@ -7,7 +7,6 @@ import {
   TConfig,
   TLogger,
   TMongoClient,
-  TPetsController,
 } from './types/container';
 import { notFoundHandler, errorHandler } from './middlewares/errorHandle';
 
@@ -20,8 +19,8 @@ export class App {
   constructor(
     @inject(TYPES.Config) private readonly config: TConfig,
     @inject(TYPES.MongoClient) private readonly mongoClient: TMongoClient,
-    @inject(TYPES.AuthController) private readonly authController: TAuthController,
-    @inject(TYPES.PetsController) private readonly petsController: TPetsController,
+    @inject(TYPES.AuthController)
+    private readonly authController: TAuthController,
     @inject(TYPES.Logger) private readonly logger: TLogger,
   ) {
     this.app = express();
@@ -33,7 +32,6 @@ export class App {
 
   private setupRoutes() {
     this.authController.setupRoutes(this.router);
-    this.petsController.setupRoutes(this.router);
     this.app.use(this.router);
   }
 

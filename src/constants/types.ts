@@ -1,12 +1,10 @@
 export const TYPES = {
   MongoClient: Symbol.for('MongoClient'),
   AuthService: Symbol.for('AuthService'),
-  PetsService: Symbol.for('PetsService'),
   App: Symbol.for('App'),
   Logger: Symbol.for('Logger'),
   Config: Symbol.for('Config'),
   AuthController: Symbol.for('AuthController'),
-  PetsController: Symbol.for('PetsController'),
 };
 
 export enum StatusCodes {
