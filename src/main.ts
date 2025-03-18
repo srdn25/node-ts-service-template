@@ -1,11 +1,14 @@
 import { container } from '@/container';
 import type { TApp, TLogger } from '@/types/container';
 import { TYPES } from './constants/types';
+import { setupGracefulShutdown } from './utils/gracefullShutdown';
 
 async function bootstrap() {
   const app = container.get<TApp>(TYPES.App);
 
   try {
+    setupGracefulShutdown(container);
+
     await app.start();
     const logger = container.get<TLogger>(TYPES.Logger);
 

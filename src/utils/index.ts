@@ -1,14 +1,47 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
+import { BaseError } from '@/libs/errors/Base.error';
+import { MongooseErrorHandler } from '@/libs/errors/Database.error';
+import { Error } from 'mongoose';
+
 export function catchAsync() {
-  return function (
-    target: any,
+  return function <Args extends unknown[], R>(
+    target: object,
     propertyName: string,
-    descriptor: TypedPropertyDescriptor<(...args: any[]) => Promise<void>>,
+    descriptor: TypedPropertyDescriptor<(...args: Args) => Promise<R>>,
   ) {
     const originalMethod = descriptor.value!;
-    descriptor.value = function (...args: any[]): Promise<void> {
-      return originalMethod.apply(this, args).catch(args[2]);
+    descriptor.value = function (...args: Args): Promise<R> {
+      const errorHandler = args[2] as (err: unknown) => Promise<R> | R;
+      return originalMethod.apply(this, args).catch(errorHandler) as Promise<R>;
     };
   };
+}
+
+export function DatabaseErrorCatch<Args extends unknown[], R>(
+  target: object,
+  propertyKey: string | symbol,
+  descriptor: TypedPropertyDescriptor<(...args: Args) => Promise<R>>,
+): TypedPropertyDescriptor<(...args: Args) => Promise<R>> {
+  const originalMethod = descriptor.value!;
+
+  descriptor.value = async function (...args: Args): Promise<R> {
+    try {
+      return await originalMethod.apply(this, args);
+    } catch (error: unknown) {
+      if (error instanceof BaseError) {
+        throw error;
+      }
+
+      const errObj = error as { message?: string };
+      const errMessage = errObj.message ?? 'unknown error';
+
+      const message = `Error in ${target.constructor.name}.${String(propertyKey)}: ${errMessage}`;
+
+      const errors =
+        error instanceof Error.ValidationError ? error.errors : { message };
+
+      throw new MongooseErrorHandler(error as Error, errors);
+    }
+  };
+  return descriptor;
 }

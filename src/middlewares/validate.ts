@@ -1,6 +1,7 @@
 import { ZodError, type ZodSchema } from 'zod';
 import type { Request, Response, NextFunction } from 'express';
 import { StatusCodes } from '@/constants/types';
+import { BaseError } from '@/libs/errors/Base.error';
 
 export const validate =
   <
@@ -38,6 +39,9 @@ export const validate =
             message: err.message,
           })),
         });
+        return;
+      } else if (error instanceof BaseError) {
+        throw error;
       }
 
       res.status(StatusCodes.BAD_REQUEST).json({ message: 'Invalid request' });

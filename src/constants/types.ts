@@ -5,6 +5,7 @@ export const TYPES = {
   Logger: Symbol.for('Logger'),
   Config: Symbol.for('Config'),
   AuthController: Symbol.for('AuthController'),
+  HealthController: Symbol.for('HealthController'),
 };
 
 export enum StatusCodes {

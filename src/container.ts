@@ -7,13 +7,15 @@ import type {
   TApp,
   TConfig,
   TLogger,
+  THealthController,
 } from './types/container';
 import { MongoClient } from './libs/database/mongo';
-import { AuthService } from './modules/auth/auth.service';
+import { AuthService } from './modules/auth/service';
 import { App } from './App';
 import { Config } from './config';
-import { AuthController } from './modules/auth/auth.controller';
+import { AuthController } from './modules/auth/controller';
 import { Logger } from './libs/Logger';
+import { HealthController } from './modules/health/controller';
 
 const container = new Container();
 
@@ -26,5 +28,6 @@ container
 container.bind<TAuthService>(TYPES.AuthService).to(AuthService);
 container.bind<TAuthController>(TYPES.AuthController).to(AuthController);
 container.bind<TApp>(TYPES.App).to(App).inSingletonScope();
+container.bind<THealthController>(TYPES.HealthController).to(HealthController);
 
 export { container };

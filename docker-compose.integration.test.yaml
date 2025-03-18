@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:8.0
+    container_name: mongo-integration-test-template
+    ports:
+      - '27018:27017'
+    volumes:
+      - mongo_integration_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: template-integration-tests
+    networks:
+      - north-star-invoice-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 500M
+        reservations:
+          cpus: '0.25'
+          memory: 200M
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', 'db.runCommand({ ping: 1 })']
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  app:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile.test
+    container_name: app-integration-test
+    depends_on:
+      - mongodb
+    environment:
+      NODE_ENV: test
+    networks:
+      - north-star-invoice-net
+    command: ${TEST_ARGS:-}
+
+volumes:
+  mongo_integration_data:
+
+networks:
+  north-star-invoice-net:

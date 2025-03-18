@@ -1,0 +1,155 @@
+openapi: 3.0.0
+info:
+  title: NorthStar Invoice API Paths
+  version: 1.0.0
+  description: |
+    # Authentication Guide
+    To test endpoints that require authentication:
+
+    1. First, use the `/register` or `/login` endpoint to get an access token
+    2. Click the "Authorize" button at the top of the page
+    3. Enter your token in the format: `Bearer YOUR_TOKEN_HERE`
+    4. Click "Authorize" and then "Close"
+    5. Now you can use all authenticated endpoints
+
+    Note: The token expires after some time. If you get an unauthorized error, repeat the login process to get a new token.
+
+paths:
+  /register:
+    post:
+      tags:
+        - Auth
+      summary: Register a new user
+      description: Create a new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - name
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: 'user@example.com'
+                password:
+                  type: string
+                  format: password
+                  example: 'Password123!'
+                name:
+                  type: string
+                  example: 'John Doe'
+                address:
+                  type: string
+                  example: '123 User St, City'
+                phone:
+                  type: string
+                  example: '+1234567890'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /login:
+    post:
+      tags:
+        - Auth
+      summary: Login to the system
+      description: |
+        Authenticate a user and get access tokens.
+        Use the returned accessToken for authorization on other endpoints.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: 'user@example.com'
+                password:
+                  type: string
+                  format: password
+                  example: 'Password123!'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                    description: 'Copy this token and use it in the Authorize button at the top'
+                  refreshToken:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /refresh:
+    post:
+      tags:
+        - Auth
+      summary: Refresh access token
+      description: Get a new access token using refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+        '401':
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

@@ -1,7 +1,13 @@
 node_modules
+.vscode
 dist
 .env
+.env.*
+.cert
+.key
+certs
+coverage/
 .DS_Store
 *.log
 upload
-certs
+/logs

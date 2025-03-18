@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-namespace */
-import type { User } from '@/entities/user.entity';
+import type { User } from '@/entities/user';
 import type { TMongoObjectId } from '@/types';
 
 declare global {

@@ -1,0 +1,51 @@
+openapi: 3.0.0
+info:
+  title: NorthStar Invoice API Models
+  version: 1.0.0
+
+components:
+  schemas:
+    User:
+      type: object
+      required:
+        - email
+        - name
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: '60d21b4667d0d8992e610c84'
+        email:
+          type: string
+          format: email
+          example: 'user@example.com'
+        name:
+          type: string
+          example: 'John Doe'
+        address:
+          type: string
+          example: '123 User St, City'
+        phone:
+          type: string
+          example: '+1234567890'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              message:
+                type: string

@@ -1,10 +1,18 @@
 import type { z } from 'zod';
 import jwt from 'jsonwebtoken';
-import type { RequestHandler } from 'express';
-import { UserModel, UserSchemaZod } from '@/entities/user.entity';
+import type { Request, Response, NextFunction } from 'express';
+import { UserModel, UserSchemaZod } from '@/entities/user';
 import type { TMongoObjectId } from '@/types';
 
-export const authMiddleware: RequestHandler = async (req, res, next) => {
+export const authMiddleware = async <
+  TParams = unknown,
+  TQuery = unknown,
+  TBody = unknown,
+>(
+  req: Request<TParams, unknown, TBody, TQuery>,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
@@ -12,9 +20,13 @@ export const authMiddleware: RequestHandler = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      userId: string;
+      userId: TMongoObjectId;
+      email: string;
     };
-    const user = await UserModel.findById(decoded.userId);
+    const user = await UserModel.findOne({
+      email: decoded.email,
+      _id: decoded.userId,
+    });
 
     if (!user) {
       throw new Error('User not found');

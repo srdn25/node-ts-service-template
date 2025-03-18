@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile.test
+    container_name: app-test
+    environment:
+      NODE_ENV: test
+      MONGODB_URI: mongodb://mongodb:27017/service-tests
+    command: ${TEST_ARGS:-}
