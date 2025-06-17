@@ -62,43 +62,49 @@ To run service localy follow next steps:
 
 ### Testing
 
-The project includes integration tests for the API endpoints. There are several ways to run the tests:
+The project includes integration tests for the API endpoints. The tests use **testcontainers** to automatically manage MongoDB containers for isolated testing.
 
-#### Run Tests with Docker (All-in-one)
-
-This will start MongoDB in a container and run the tests:
+#### Run All Tests
 
 ```bash
-npm run test:integration:docker
+npm run test
 ```
 
-#### Separate Testing Steps
+This will run both unit tests and integration tests.
 
-If you want more control over the testing process, you can:
+#### Run Tests Separately
 
-1. **Start only the test database**:
-
+**Unit Tests:**
 ```bash
-npm run test:db:start
+npm run test:unit
 ```
 
-2. **Run tests against the running database**:
-
+**Integration Tests:**
 ```bash
-npm run test:run
-```
-
-3. **Stop the test database when done**:
-
-```bash
-npm run test:db:stop
+npm run test:integration
 ```
 
 #### Testing Environment
 
-The tests use a separate MongoDB database (`northStarInvoice-integration-tests`) to avoid conflicting with development data. The test configuration is in `.integration.test.env` file.
+Integration tests automatically:
+- Start a fresh MongoDB container for each test run
+- Use isolated test data to avoid conflicts
+- Clean up containers after tests complete
+- No manual Docker setup required
+
+The test configuration is in `.integration.test.env` file.
 
 Integration tests are located in the `test/integration` directory and use Jest as the testing framework with SuperTest for API testing.
+
+#### Legacy Docker Testing (Optional)
+
+If you prefer to use Docker Compose for testing:
+
+```bash
+npm run test:docker
+```
+
+This runs all tests in a Docker environment.
 
 ## API Documentation
 

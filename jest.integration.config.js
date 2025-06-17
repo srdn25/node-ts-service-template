@@ -6,6 +6,7 @@ const config = {
   forceExit: true,
   detectOpenHandles: true,
   testTimeout: 30000,
+  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@/test/(.*)$': '<rootDir>/test/$1',

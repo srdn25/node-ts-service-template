@@ -16,14 +16,16 @@ const config = {
     },
   },
   transformIgnorePatterns: ['/node_modules/(?!.*\\.mjs$)'],
-  moduleFileExtensions: ['ts', 'js', 'json'],
+  moduleFileExtensions: ['ts', 'js'],
   testPathIgnorePatterns: ['/node_modules/'],
   verbose: true,
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@/test/(.*)$': '<rootDir>/test/$1',
   },
-  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/test/unit-setup.ts'],
   forceExit: true,
+  detectOpenHandles: true,
   testTimeout: 30000,
 };
 

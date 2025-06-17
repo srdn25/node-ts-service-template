@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  petpaw:
+  service:
     build: .
-    container_name: petpaw
+    container_name: service
     ports:
       - '3000:3000'
     env_file:
@@ -15,7 +15,7 @@ services:
     depends_on:
       - mongo
     networks:
-      - petpaw-net
+      - service-net
 
 networks:
-  petpaw-net:
+  service-net:

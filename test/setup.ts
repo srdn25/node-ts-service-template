@@ -1,49 +1,25 @@
 /// <reference types="jest" />
 
-jest.mock('mongoose', () => {
-  const originalModule = jest.requireActual('mongoose');
+import { MongoDBContainer, StartedMongoDBContainer } from '@testcontainers/mongodb';
 
-  const connect = jest.fn();
-  const connection = {
-    once: jest.fn(),
-    on: jest.fn(),
-    close: jest.fn(),
-  };
+let mongoContainer: StartedMongoDBContainer;
 
-  const model = jest.fn().mockImplementation((name: string) => {
-    return {
-      find: jest.fn().mockReturnThis(),
-      findOne: jest.fn().mockReturnThis(),
-      findOneAndUpdate: jest.fn().mockReturnThis(),
-      create: jest.fn().mockReturnThis(),
-      findById: jest.fn().mockReturnThis(),
-      updateOne: jest.fn().mockReturnThis(),
-      deleteOne: jest.fn().mockReturnThis(),
-      populate: jest.fn().mockReturnThis(),
-      exec: jest.fn().mockResolvedValue([]),
-      modelName: name,
-      schema: {
-        pre: jest.fn(),
-      },
-    };
-  });
+beforeAll(async () => {
+  // Start MongoDB container for integration tests
+  if (process.env.NODE_ENV === 'test' && process.env.JEST_WORKER_ID) {
+    mongoContainer = await new MongoDBContainer('mongo:8.0')
+      .start();
+    
+    // Set the MongoDB URI for tests
+    process.env.MONGODB_URI = mongoContainer.getConnectionString();
+  }
+});
 
-  const ObjectId = function (v?: any) {
-    return v || 'someObjectId';
-  } as unknown as typeof originalModule.Types.ObjectId;
-
-  ObjectId.isValid = jest.fn().mockReturnValue(true);
-
-  return {
-    ...originalModule,
-    connect,
-    connection,
-    model,
-    Types: {
-      ...originalModule.Types,
-      ObjectId,
-    },
-  };
+afterAll(async () => {
+  // Clean up MongoDB container
+  if (mongoContainer) {
+    await mongoContainer.stop();
+  }
 });
 
 afterAll(() => {

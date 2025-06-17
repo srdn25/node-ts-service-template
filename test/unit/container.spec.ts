@@ -7,7 +7,6 @@ jest.mock('../../src/config', () => {
       values: {
         MONGODB_URI: 'mongodb://localhost:27017/test',
         MONGODB_TLS_FILE_PATH: './certs/ca.key',
-        RABBITMQ_URI: 'amqp://localhost',
         JWT_SECRET: 'test-secret',
         PORT: 3000,
         NODE_ENV: 'test',
