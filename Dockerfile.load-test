@@ -1,0 +1,5 @@
+FROM grafana/k6:latest
+
+WORKDIR /home/k6
+
+COPY ./load-tests /home/k6

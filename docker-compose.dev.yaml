@@ -1,34 +1,27 @@
 version: '3.8'
 
 services:
-  mongo:
-    image: mongo:8.0
-    container_name: mongo
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node-ts-service
     ports:
-      - '27017:27017'
-    volumes:
-      - ./src/certs/ca.key:/keys/ca.key
-      - mongo_data2:/data/db
+      - '3000:3000'
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-      MONGO_INITDB_REPLICA_SET_NAME: rs0
-    command:
-      [
-        'mongod',
-        '--replSet',
-        'rs0',
-        '--bind_ip_all',
-        '--keyFile',
-        '/keys/ca.key',
-        '--dbpath',
-        '/data/db',
-      ]
-    networks:
-      - service-net
-
-volumes:
-  mongo_data2:
-
-networks:
-  service-net:
+      - NODE_ENV=development
+      - MONGODB_URI=YOUR_MONGODB_CONNECTION_STRING_HERE
+      - PORT=3000
+      - LOGGER_LEVEL=debug
+      - SWAGGER_PATH=/docs
+      - JWT_SECRET=your-super-secret-jwt-key-for-development-only
+      - JWT_REFRESH_TOKEN_SECRET=your-super-secret-refresh-jwt-key-for-development-only
+      - JWT_ACCESS_TOKEN_EXPIRE_TIME=7200000
+      - JWT_REFRESH_TOKEN_EXPIRE_TIME=2592000000
+    volumes:
+      - ./src:/app/src
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./esbuild.cjs:/app/esbuild.cjs
+    command: npm run dev

@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  k6:
+    build:
+      context: .
+      dockerfile: Dockerfile.load-test
+    container_name: k6-load-tester
+    environment:
+      - K6_vus=10
+      - K6_duration=30s
+      - TARGET_HOST=${TARGET_HOST:-http://localhost:3000}
+    command: run /home/k6/auth.js
+    network_mode: host
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M

@@ -18,7 +18,9 @@
     "test:unit": "NODE_ENV=test jest --config ./jest.unit.config.js --detectOpenHandles",
     "test:unit:watch": "NODE_ENV=test jest --config ./jest.unit.config.js --watch",
     "test:unit:coverage": "NODE_ENV=test jest --config ./jest.unit.config.js --coverage",
-    "test": "npm run test:unit && npm run test:integration"
+    "test": "npm run test:unit && npm run test:integration",
+    "load-test": "k6 run load-tests/auth.js",
+    "test:load:docker": "docker compose -f docker-compose.load-test.yaml up --build --abort-on-container-exit --remove-orphans"
   },
   "keywords": [
     "node",
@@ -60,6 +62,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.8",
+    "@types/k6": "^1.1.0",
     "@types/mongodb": "^4.0.6",
     "@types/mongoose": "^5.11.97",
     "@types/node": "^22.13.1",

@@ -25,13 +25,13 @@
 
 - Create a `.env` file in the project's root directory.
 - Copy the content of `.env.example` to your `.env` file.
-- Modify the values in your `.env` file to match your needs.
-- **Do not change `MONGODB_URI`** value, when you start local development.
+- **You must provide your own `MONGODB_URI`**. The service is configured to connect to a MongoDB database, but a database instance is not included in this template. You can use a local MongoDB instance or a cloud-based service like MongoDB Atlas.
+- Modify the other values in your `.env` file to match your needs.
 
 Example `.env`:
 
 ```properties
-MONGODB_URI=mongodb://root:example@localhost:27017/northStarInvoice?authSource=admin&replicaSet=rs0
+MONGODB_URI=mongodb://user:password@your-mongodb-host:27017/your-database
 JWT_SECRET=your_jwt_secret_key
 JWT_REFRESH_TOKEN_SECRET=your_refresh_jwt_secret_key
 PORT=3000
@@ -44,21 +44,13 @@ LOGGER_FILE_PATH='/logs'
 
 ### Development
 
-To run service localy follow next steps:
+To run the service locally, you can use the provided Docker Compose setup:
 
-- chmod +x ./docker/generate-ca-key.sh
-- ./docker/generate-ca-key.sh // it will generate ssl certificate for mongodb
-- npm run local:docker
-- docker exec -it mongo-north-star-invoice mongosh
-  - use admin
-  - db.auth("root")
-  - Enter password <example>
-  - rs.initiate({
-    \_id : 'rs0',
-    members: [
-    { _id : 0, host : "mongodb:27017" }
-    ]
-    })
+```bash
+docker-compose -f docker-compose.dev.yaml up --build
+```
+
+This will start the service, but you will need to have a MongoDB instance running and have the `MONGODB_URI` in your `.env` file pointing to it.
 
 ### Testing
 
@@ -127,3 +119,32 @@ To test endpoints that require authentication:
 5. Now you can use all authenticated endpoints in the Swagger UI
 
 Note: The JWT token expires after some time. If you get an unauthorized error, repeat the login process to get a new token. Or exchange auth token by refresh token
+
+## Load Testing
+
+This project uses [k6](https://k6.io/) for load testing.
+
+### 1. Installation
+
+Before running the load tests, you need to install `k6`.
+
+**Linux (using the official installer):**
+```bash
+sudo gpg -k
+sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+sudo apt-get update
+sudo apt-get install k6
+```
+
+For other operating systems, please refer to the official [k6 installation documentation](https://k6.io/docs/get-started/installation/).
+
+### 2. Running the tests
+
+Once `k6` is installed, you can run the load tests using the following npm script:
+
+```bash
+npm run load-test
+```
+
+This will execute the test script located in `load-tests/auth.js`. You can modify this script or create new ones to simulate different user scenarios.
