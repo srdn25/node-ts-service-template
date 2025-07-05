@@ -1,4 +1,2 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
+#!/bin/bash
 npm run lint && npm run build && npm run test:unit 
