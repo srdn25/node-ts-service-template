@@ -8,5 +8,5 @@ services:
     container_name: app-test
     environment:
       NODE_ENV: test
-      MONGODB_URI: mongodb://mongodb:27017/service-tests
+      MONGODB_URI: YOUR_MONGODB_CONNECTION_STRING_HERE # Or configure for your test database
     command: ${TEST_ARGS:-}

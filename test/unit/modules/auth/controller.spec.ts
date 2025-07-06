@@ -105,25 +105,25 @@ describe('AuthController', () => {
       expect(mockRouter.patch).toHaveBeenCalledTimes(1);
 
       expect(mockRouter.post).toHaveBeenCalledWith(
-        '/register',
+        '/auth/register',
         expect.any(Function),
         expect.any(Function),
       );
 
       expect(mockRouter.post).toHaveBeenCalledWith(
-        '/login',
+        '/auth/login',
         expect.any(Function),
         expect.any(Function),
       );
 
       expect(mockRouter.post).toHaveBeenCalledWith(
-        '/refresh-token',
+        '/auth/refresh-token',
         expect.any(Function),
         expect.any(Function),
       );
 
       expect(mockRouter.patch).toHaveBeenCalledWith(
-        '/user/:userId',
+        '/auth/user/:userId',
         expect.any(Function),
         expect.any(Function),
         expect.any(Function),

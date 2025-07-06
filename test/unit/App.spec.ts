@@ -210,10 +210,11 @@ describe('App', () => {
 
       expect(mockExpressApp.listen).toHaveBeenCalledWith(
         3000,
+        '0.0.0.0',
         expect.any(Function),
       );
 
-      const listenCallback = mockExpressApp.listen.mock.calls[0][1];
+      const listenCallback = mockExpressApp.listen.mock.calls[0][2];
       listenCallback();
       expect(mockLogger.info).toHaveBeenCalledWith(
         'Server running on port 3000',

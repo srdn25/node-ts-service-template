@@ -1,77 +1,114 @@
-# Service Load Tests
+# Load Testing
 
-This directory contains scripts for load testing the service API using [k6](https://k6.io/).
+This directory contains k6 load tests for the Node.js TypeScript service.
 
-## Requirements
+## Prerequisites
 
-- Installed k6 (https://k6.io/docs/get-started/installation/)
-- Running application (by default at http://localhost:3000)
+- Docker and Docker Compose installed
+- Target service running and accessible (local development server, remote API, etc.)
 
-## Scripts
+## Running Load Tests
 
-The directory contains the following load testing scripts:
+### Quick Start
 
-1. **auth.js** - testing authentication (registration, login)
-
-## Running Tests
-
-### Basic Run
+The easiest way to run load tests:
 
 ```bash
-k6 run load-tests/auth.js
+# Run against local development server
+npm run test:load
+
+# Or use the script directly
+./scripts/run-load-test.sh run
 ```
 
-### Running with Custom Parameters
+### Manual Docker Commands
+
+Run load tests against any external service:
 
 ```bash
-k6 run --vus 10 --duration 30s load-tests/auth.js
-```
+# Against local development server (default)
+docker-compose -f docker-compose.load-test.yaml up --build
 
-### Running with Results Saving
+# Against remote host
+TARGET_HOST=http://api.example.com:3000 docker-compose -f docker-compose.load-test.yaml up --build
 
-```bash
-k6 run --out json=results.json load-tests/auth.js
+# Against custom port
+TARGET_HOST=http://localhost:8080 docker-compose -f docker-compose.load-test.yaml up --build
 ```
 
 ## Test Configuration
 
-Before running the tests, you may need to change the following parameters:
+The load test (`auth.js`) includes:
 
-1. **BASE_URL** - API URL (default is 'http://localhost:3000')
-2. **Test data** - test users
-3. **Thresholds** - acceptable values for response time and error rate
+- **Ramping VUs**: Starts with 1 user, ramps up to 20 users over 2.5 minutes
+- **Test Duration**: Total test runs for 3.5 minutes
+- **Test Scenarios**: Registration and login flows
+- **Metrics**: Custom metrics for auth failures, login/register durations, and token generation
+- **Thresholds**: 
+  - Less than 1% request failures
+  - 95% of requests under 500ms
+  - Login requests under 300ms
+  - Registration requests under 400ms
 
-## Metrics
+## Test Data
 
-All scripts collect the following metrics:
+The test generates 20 unique test users with:
+- Email: `testuser{i}@example.com`
+- Name: `Test User {i}`
+- Password: `password{i}123`
+- Address: `Somestreet-{i}` (padded to 4 digits)
 
-- Response time for each request type
-- Percentage of failed requests
-- Number of successful operations for each resource
-- Additional custom metrics (depends on the script)
+## Troubleshooting
 
-## Load Scenarios
+### Connection Refused Errors
 
-### auth.js
+If you see "connection refused" errors:
 
-- Ramping up from 1 to 20 users over several minutes
-- Simulation of registration and login processes
+1. **Check if the target application is running**:
+   ```bash
+   curl http://localhost:3000/health
+   ```
 
-## Results Analysis
+2. **Verify the TARGET_HOST environment variable**:
+   - For local development: `http://localhost:3000`
+   - For remote host: `http://api.example.com:3000`
+   - For WSL2: `http://host.docker.internal:3000`
 
-After running the test, k6 outputs a detailed report with performance metrics, including:
+3. **Check if the target service is accessible**:
+   ```bash
+   # Test connectivity
+   curl -v $TARGET_HOST/health
+   
+   # Check if port is open
+   telnet localhost 3000
+   ```
 
-- Average response time
-- Median response time
-- 95th and 99th percentiles of response time
-- Request rate
-- Number of errors
+### Performance Issues
 
-## Performance Requirements
+- Adjust VU count and duration in the docker-compose file
+- Monitor system resources during tests
+- Check application logs for bottlenecks
 
-The tests have the following thresholds:
+## Customizing Tests
 
-- No more than 1% of requests should fail
-- 95% of all requests should complete under 500ms
-- 95% of login requests should complete under 300ms
-- 95% of registration requests should complete under 400ms
+To modify test parameters, edit the `options` object in `auth.js`:
+
+```javascript
+export const options = {
+  scenarios: {
+    auth_flow: {
+      executor: 'ramping-vus',
+      startVUs: 1,
+      stages: [
+        { duration: '30s', target: 5 },
+        { duration: '1m', target: 10 },
+        // ... more stages
+      ],
+    },
+  },
+  thresholds: {
+    http_req_failed: ['rate<0.01'],
+    http_req_duration: ['p(95)<500'],
+  },
+};
+```

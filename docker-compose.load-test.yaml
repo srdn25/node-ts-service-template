@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  k6:
+    build:
+      context: .
+      dockerfile: Dockerfile.load-test
+    container_name: k6-load-tester
+    environment:
+      - K6_vus=10
+      - K6_duration=10s
+      - TARGET_HOST=${TARGET_HOST:-http://host.docker.internal:3000}
+    command: run /home/k6/auth.js
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    # For WSL2, use host.docker.internal to access host machine
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Alternative: use network_mode: host for Linux
+    # network_mode: host

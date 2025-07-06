@@ -25,13 +25,13 @@
 
 - Create a `.env` file in the project's root directory.
 - Copy the content of `.env.example` to your `.env` file.
-- Modify the values in your `.env` file to match your needs.
-- **Do not change `MONGODB_URI`** value, when you start local development.
+- **You must provide your own `MONGODB_URI`**. The service is configured to connect to a MongoDB database, but a database instance is not included in this template. You can use a local MongoDB instance or a cloud-based service like MongoDB Atlas.
+- Modify the other values in your `.env` file to match your needs.
 
 Example `.env`:
 
 ```properties
-MONGODB_URI=mongodb://root:example@localhost:27017/northStarInvoice?authSource=admin&replicaSet=rs0
+MONGODB_URI=mongodb://user:password@your-mongodb-host:27017/your-database
 JWT_SECRET=your_jwt_secret_key
 JWT_REFRESH_TOKEN_SECRET=your_refresh_jwt_secret_key
 PORT=3000
@@ -44,21 +44,16 @@ LOGGER_FILE_PATH='/logs'
 
 ### Development
 
-To run service localy follow next steps:
+To run the service locally, you can use the provided Docker Compose setup:
 
-- chmod +x ./docker/generate-ca-key.sh
-- ./docker/generate-ca-key.sh // it will generate ssl certificate for mongodb
-- npm run local:docker
-- docker exec -it mongo-north-star-invoice mongosh
-  - use admin
-  - db.auth("root")
-  - Enter password <example>
-  - rs.initiate({
-    \_id : 'rs0',
-    members: [
-    { _id : 0, host : "mongodb:27017" }
-    ]
-    })
+Use remote mongo server or create localy:
+docker run --name dev-mongo -p 27017:27017 -d mongo:8.0.11
+
+```bash
+docker compose -f docker-compose.dev.yaml up --build
+```
+
+This will start the service, but you will need to have a MongoDB instance running and have the `MONGODB_URI` in your `.env` file pointing to it.
 
 ### Testing
 
@@ -127,3 +122,48 @@ To test endpoints that require authentication:
 5. Now you can use all authenticated endpoints in the Swagger UI
 
 Note: The JWT token expires after some time. If you get an unauthorized error, repeat the login process to get a new token. Or exchange auth token by refresh token
+
+## Load Testing
+
+This project uses [k6](https://k6.io/) for load testing against external services.
+
+### Quick Start
+
+The easiest way to run load tests is using the provided script:
+
+```bash
+# Run against local development server
+npm run test:load
+
+# Or run with custom target
+TARGET_HOST=http://api.example.com:3000 npm run test:load
+```
+
+### Manual Docker Commands
+
+Run load tests against any external service:
+
+```bash
+# Against local development server (default)
+docker-compose -f docker-compose.load-test.yaml up --build
+
+# Against remote host
+TARGET_HOST=http://api.example.com:3000 docker-compose -f docker-compose.load-test.yaml up --build
+```
+
+### Test Configuration
+
+The load tests include:
+- **Authentication flows**: Registration and login testing
+- **Ramping load**: 1 to 20 users over 3.5 minutes
+- **Performance thresholds**: 95% of requests under 500ms
+- **Custom metrics**: Auth failures, response times, token generation
+
+### Test Scenarios
+
+- **auth.js**: Tests user registration and login flows
+- Generates 20 unique test users
+- Measures response times and error rates
+- Validates authentication token generation
+
+For detailed configuration and troubleshooting, see [load-tests/README.md](load-tests/README.md).
