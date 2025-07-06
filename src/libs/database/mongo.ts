@@ -43,6 +43,7 @@ export class MongoClient {
         connectionOptions.tlsCAFile = this.config.values.MONGODB_TLS_FILE_PATH;
       }
 
+      this.logger.info(`Connecting to MongoDB: ${this.config.values.MONGODB_URI}`);
       this.connection = await mongoose.connect(
         this.config.values.MONGODB_URI,
         connectionOptions,
