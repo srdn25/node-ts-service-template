@@ -9,7 +9,7 @@ services:
     environment:
       - K6_vus=10
       - K6_duration=10s
-      - TARGET_HOST=${TARGET_HOST:-http://host.docker.internal:3000}
+      - TARGET_HOST=${TARGET_HOST:-http://172.21.127.86:3000}
       - K6_SCRIPT=${K6_SCRIPT}
       - TARGET_ENDPOINT=${TARGET_ENDPOINT}
       - TARGET_RPS=${TARGET_RPS}

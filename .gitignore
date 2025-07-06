@@ -11,4 +11,4 @@ coverage/
 *.log
 upload
 /logs
-/load-tests/results
+/load-test-results

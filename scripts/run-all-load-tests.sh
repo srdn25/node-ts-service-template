@@ -59,7 +59,7 @@ for ENTRY in "${ENDPOINTS[@]}"; do
 
     # Extract the http_req_failed rate (percentage of errors)
     # The output format is like: http_req_failed.........................................................: 0.00%  0 out of 300
-    ERROR_PERCENTAGE=$(echo "$OUTPUT" | grep "http_req_failed" | awk '{print $2}' | sed 's/%//')
+    ERROR_PERCENTAGE=$(echo "$OUTPUT" | grep "http_req_failed" | grep -oP '\d+\.\d+%' | sed 's/%//')
 
     if [ -n "$AVG_RESPONSE_TIME" ]; then
       echo "    Average Response Time (${RPS} RPS): ${AVG_RESPONSE_TIME}ms"

@@ -2,19 +2,14 @@ version: '3.8'
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: node-ts-service
+    image: service-template:latest
     ports:
       - '3000:3000'
-    env_file:
-      - .env
-    volumes:
-      - ./src:/app/src
-      - ./package.json:/app/package.json
-      - ./package-lock.json:/app/package-lock.json
-      - ./tsconfig.json:/app/tsconfig.json
-      - ./esbuild.cjs:/app/esbuild.cjs
-      - ./.env:/app/.env
-    command: npm run dev
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: '128M'
+        limits:
+          cpus: '0.5'
+          memory: '256M'

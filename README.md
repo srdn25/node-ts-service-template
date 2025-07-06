@@ -55,6 +55,63 @@ docker compose -f docker-compose.dev.yaml up --build
 
 This will start the service, but you will need to have a MongoDB instance running and have the `MONGODB_URI` in your `.env` file pointing to it.
 
+### Docker Swarm Deployment
+
+To deploy the service to a Docker Swarm cluster, you first need to build and push the Docker image to a registry. Then you can use the `docker-compose.dev.yaml` file with the `docker stack deploy` command.
+
+1.  **Build the Docker image:**
+    ```bash
+    docker build -t service-template:latest .
+    ```
+
+2.  **Push the image to a registry:**
+    ```bash
+    docker push service-template:latest
+    ```
+
+3.  **Initialize Docker Swarm** (if you haven't already):
+    ```bash
+    docker swarm init
+    ```
+
+4.  **Deploy the stack:**
+    ```bash
+    docker stack deploy -c docker-compose.dev.yaml service-template
+    ```
+    This will create a stack named `service-template`.
+
+### Monitoring the Service
+
+Once the service is deployed, you can monitor it using the following commands:
+
+-   **List the running services in the stack:**
+    ```bash
+    docker stack services service-template
+    ```
+
+-   **Check the resource usage of the running containers:**
+    ```bash
+    docker stats --no-stream
+    ```
+
+-   **List the running containers for the service:**
+    ```bash
+    docker service ps service-template_app
+    ```
+
+-   **View service logs:**
+    ```bash
+    docker service logs service-template_app
+    ```
+
+### Removing the Stack
+
+To remove the deployed stack, use the following command:
+
+```bash
+docker stack rm service-template
+```
+
 ### Testing
 
 The project includes integration tests for the API endpoints. The tests use **testcontainers** to automatically manage MongoDB containers for isolated testing.
@@ -146,4 +203,12 @@ You can configure the load test parameters by editing the `scripts/run-all-load-
 - `MAX_RPS`: The maximum number of requests per second to test.
 
 The script will run tests for each endpoint defined in the `ENDPOINTS` array, starting with 10 RPS and then iterating from `START_RPS` to `MAX_RPS` with the specified step.
+
+#### Targeting a Specific Host for Load Tests
+
+By default, load tests are configured to target `http://172.21.127.86:3000` (your WSL IP address). If you need to target a different host (e.g., a local Docker Compose setup or another IP), you can override the `TARGET_HOST` environment variable when running the load tests:
+
+```bash
+TARGET_HOST=http://localhost:3000 npm run test:load
+```
 
