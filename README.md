@@ -204,3 +204,11 @@ You can configure the load test parameters by editing the `scripts/run-all-load-
 
 The script will run tests for each endpoint defined in the `ENDPOINTS` array, starting with 10 RPS and then iterating from `START_RPS` to `MAX_RPS` with the specified step.
 
+#### Targeting a Specific Host for Load Tests
+
+By default, load tests are configured to target `http://172.21.127.86:3000` (your WSL IP address). If you need to target a different host (e.g., a local Docker Compose setup or another IP), you can override the `TARGET_HOST` environment variable when running the load tests:
+
+```bash
+TARGET_HOST=http://localhost:3000 npm run test:load
+```
+
