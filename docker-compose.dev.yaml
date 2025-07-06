@@ -8,20 +8,13 @@ services:
     container_name: node-ts-service
     ports:
       - '3000:3000'
-    environment:
-      - NODE_ENV=development
-      - MONGODB_URI=YOUR_MONGODB_CONNECTION_STRING_HERE
-      - PORT=3000
-      - LOGGER_LEVEL=debug
-      - SWAGGER_PATH=/docs
-      - JWT_SECRET=your-super-secret-jwt-key-for-development-only
-      - JWT_REFRESH_TOKEN_SECRET=your-super-secret-refresh-jwt-key-for-development-only
-      - JWT_ACCESS_TOKEN_EXPIRE_TIME=7200000
-      - JWT_REFRESH_TOKEN_EXPIRE_TIME=2592000000
+    env_file:
+      - .env
     volumes:
       - ./src:/app/src
       - ./package.json:/app/package.json
       - ./package-lock.json:/app/package-lock.json
       - ./tsconfig.json:/app/tsconfig.json
       - ./esbuild.cjs:/app/esbuild.cjs
+      - ./.env:/app/.env
     command: npm run dev

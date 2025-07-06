@@ -14,11 +14,11 @@ const envSchema = z.object({
   SWAGGER_PATH: z.string().default('/docs'),
 
   JWT_SECRET: z.string().min(8, 'Secret must be at least 8 chars'),
-  JWT_ACCESS_TOKEN_EXPIRE_TIME: z.number().default(2 * 1000), // in ms
+  JWT_ACCESS_TOKEN_EXPIRE_TIME: z.coerce.number().default(2 * 1000), // in ms
   JWT_REFRESH_TOKEN_SECRET: z
     .string()
     .min(8, 'Secret must be at least 8 chars'),
-  JWT_REFRESH_TOKEN_EXPIRE_TIME: z.number().default(30 * 1000), // in ms
+  JWT_REFRESH_TOKEN_EXPIRE_TIME: z.coerce.number().default(30 * 1000), // in ms
 });
 
 export type AppConfig = z.infer<typeof envSchema>;

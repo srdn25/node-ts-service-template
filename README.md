@@ -46,8 +46,11 @@ LOGGER_FILE_PATH='/logs'
 
 To run the service locally, you can use the provided Docker Compose setup:
 
+Use remote mongo server or create localy:
+docker run --name dev-mongo -p 27017:27017 -d mongo:8.0.11
+
 ```bash
-docker-compose -f docker-compose.dev.yaml up --build
+docker compose -f docker-compose.dev.yaml up --build
 ```
 
 This will start the service, but you will need to have a MongoDB instance running and have the `MONGODB_URI` in your `.env` file pointing to it.
@@ -122,29 +125,45 @@ Note: The JWT token expires after some time. If you get an unauthorized error, r
 
 ## Load Testing
 
-This project uses [k6](https://k6.io/) for load testing.
+This project uses [k6](https://k6.io/) for load testing against external services.
 
-### 1. Installation
+### Quick Start
 
-Before running the load tests, you need to install `k6`.
-
-**Linux (using the official installer):**
-```bash
-sudo gpg -k
-sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
-sudo apt-get update
-sudo apt-get install k6
-```
-
-For other operating systems, please refer to the official [k6 installation documentation](https://k6.io/docs/get-started/installation/).
-
-### 2. Running the tests
-
-Once `k6` is installed, you can run the load tests using the following npm script:
+The easiest way to run load tests is using the provided script:
 
 ```bash
-npm run load-test
+# Run against local development server
+npm run test:load
+
+# Or run with custom target
+TARGET_HOST=http://api.example.com:3000 npm run test:load
 ```
 
-This will execute the test script located in `load-tests/auth.js`. You can modify this script or create new ones to simulate different user scenarios.
+### Manual Docker Commands
+
+Run load tests against any external service:
+
+```bash
+# Against local development server (default)
+docker-compose -f docker-compose.load-test.yaml up --build
+
+# Against remote host
+TARGET_HOST=http://api.example.com:3000 docker-compose -f docker-compose.load-test.yaml up --build
+```
+
+### Test Configuration
+
+The load tests include:
+- **Authentication flows**: Registration and login testing
+- **Ramping load**: 1 to 20 users over 3.5 minutes
+- **Performance thresholds**: 95% of requests under 500ms
+- **Custom metrics**: Auth failures, response times, token generation
+
+### Test Scenarios
+
+- **auth.js**: Tests user registration and login flows
+- Generates 20 unique test users
+- Measures response times and error rates
+- Validates authentication token generation
+
+For detailed configuration and troubleshooting, see [load-tests/README.md](load-tests/README.md).

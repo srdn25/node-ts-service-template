@@ -22,22 +22,22 @@ export class AuthController {
 
   public setupRoutes(router: Router) {
     router.post(
-      '/register',
+      '/auth/register',
       validate(registerRequestSchema),
       this.register.bind(this),
     );
 
-    router.post('/login', validate(loginRequestSchema), this.login.bind(this));
+    router.post('/auth/login', validate(loginRequestSchema), this.login.bind(this));
 
     router.patch(
-      '/user/:userId',
+      '/auth/user/:userId',
       authMiddleware,
       validate(updateRequestSchema),
       this.update.bind(this),
     );
 
     router.post(
-      '/refresh-token',
+      '/auth/refresh-token',
       validate(refreshAuthTokenSchema),
       this.refresToken.bind(this),
     );

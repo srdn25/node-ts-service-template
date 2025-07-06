@@ -33,19 +33,7 @@ const loginDuration = new Trend('login_duration');
 const registerDuration = new Trend('register_duration');
 const tokensGenerated = new Counter('tokens_generated');
 
-const BASE_URL = 'http://localhost:3000'; // Replace with your actual API URL
-
-const testUsers = new SharedArray('test_users', function () {
-  return Array(20)
-    .fill(0)
-    .map((_, i) => {
-      return {
-        email: `testuser${i}@example.com`,
-        password: `password${i}123`,
-        phone: `123-456-${i.toString().padStart(4, '0')}`,
-      };
-    });
-});
+const BASE_URL = __ENV.TARGET_HOST || 'http://localhost:3000'; // Use environment variable or fallback
 
 function register(user) {
   const url = `${BASE_URL}/auth/register`;
@@ -65,11 +53,23 @@ function register(user) {
 
   const success = check(res, {
     'register status is 201': (r) => r.status === 201,
-    'has user data': (r) => r.json() !== undefined,
+    'has user data': (r) => {
+      try {
+        return r.json() !== undefined;
+      } catch (e) {
+        return false;
+      }
+    },
   });
 
   if (success) {
-    return res.json();
+    try {
+      return res.json();
+    } catch (e) {
+      authFailRate.add(1);
+      console.log(`Register failed to parse JSON: ${res.status} ${res.body}`);
+      return null;
+    }
   } else {
     authFailRate.add(1);
     console.log(`Register failed: ${res.status} ${res.body}`);
@@ -98,12 +98,18 @@ function login(credentials) {
 
   const success = check(res, {
     'login status is 200': (r) => r.status === 200,
-    'has token': (r) => r.json('token') !== undefined,
+    'has token': (r) => r.json('accessToken') !== undefined,
   });
 
   if (success) {
     tokensGenerated.add(1);
-    return res.json();
+    try {
+      return res.json();
+    } catch (e) {
+      authFailRate.add(1);
+      console.log(`Login failed to parse JSON: ${res.status} ${res.body}`);
+      return null;
+    }
   } else {
     authFailRate.add(1);
     console.log(`Login failed: ${res.status} ${res.body}`);
@@ -113,9 +119,13 @@ function login(credentials) {
 
 // Main test function
 export default function () {
-  // Select a random user from our dataset
-  const userIndex = Math.floor(Math.random() * testUsers.length);
-  const user = testUsers[userIndex];
+  const uniqueId = crypto.randomUUID();
+  const user = {
+    email: `testuser-${uniqueId}@example.com`,
+    name: `Test User ${uniqueId}`,
+    password: `password${uniqueId}`,
+    address: `Somestreet-${uniqueId}`,
+  };
 
   // Pause between requests
   sleep(1);

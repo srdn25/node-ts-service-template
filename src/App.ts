@@ -84,7 +84,8 @@ export class App {
     this.setupHandlerMiddlewares();
 
     await this.mongoClient.connect();
-    this.server = this.app.listen(this.config.values.PORT, () =>
+    // Added 0.0.0.0 to listen on all interfaces. It is needed for load tests to work
+    this.server = this.app.listen(this.config.values.PORT, '0.0.0.0', () =>
       this.logger.info(`Server running on port ${this.config.values.PORT}`),
     );
   }
