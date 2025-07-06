@@ -125,45 +125,25 @@ Note: The JWT token expires after some time. If you get an unauthorized error, r
 
 ## Load Testing
 
-This project uses [k6](https://k6.io/) for load testing against external services.
+This project uses [k6](https://k6.io/) for load testing.
 
-### Quick Start
+### Running the Load Tests
 
-The easiest way to run load tests is using the provided script:
+The easiest way to run the load tests is to use the provided npm script:
 
 ```bash
-# Run against local development server
 npm run test:load
-
-# Or run with custom target
-TARGET_HOST=http://api.example.com:3000 npm run test:load
 ```
 
-### Manual Docker Commands
+This will execute the `scripts/run-all-load-tests.sh` script, which runs a series of load tests against the service.
 
-Run load tests against any external service:
+### Configuration
 
-```bash
-# Against local development server (default)
-docker-compose -f docker-compose.load-test.yaml up --build
+You can configure the load test parameters by editing the `scripts/run-all-load-tests.sh` script. The following variables are available at the top of the file:
 
-# Against remote host
-TARGET_HOST=http://api.example.com:3000 docker-compose -f docker-compose.load-test.yaml up --build
-```
+- `START_RPS`: The initial number of requests per second.
+- `RPS_STEP`: The amount to increase the RPS by in each step.
+- `MAX_RPS`: The maximum number of requests per second to test.
 
-### Test Configuration
+The script will run tests for each endpoint defined in the `ENDPOINTS` array, starting with 10 RPS and then iterating from `START_RPS` to `MAX_RPS` with the specified step.
 
-The load tests include:
-- **Authentication flows**: Registration and login testing
-- **Ramping load**: 1 to 20 users over 3.5 minutes
-- **Performance thresholds**: 95% of requests under 500ms
-- **Custom metrics**: Auth failures, response times, token generation
-
-### Test Scenarios
-
-- **auth.js**: Tests user registration and login flows
-- Generates 20 unique test users
-- Measures response times and error rates
-- Validates authentication token generation
-
-For detailed configuration and troubleshooting, see [load-tests/README.md](load-tests/README.md).
