@@ -19,6 +19,7 @@
     "test:unit:watch": "NODE_ENV=test jest --config ./jest.unit.config.js --watch",
     "test:unit:coverage": "NODE_ENV=test jest --config ./jest.unit.config.js --coverage",
     "test": "npm run test:unit && npm run test:integration",
+    "test:load": "./scripts/run-all-load-tests.sh",
     "test:load:docker": "docker compose -f docker-compose.load-test.yaml up --build --abort-on-container-exit --remove-orphans"
   },
   "keywords": [

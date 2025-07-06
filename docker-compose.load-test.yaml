@@ -10,7 +10,10 @@ services:
       - K6_vus=10
       - K6_duration=10s
       - TARGET_HOST=${TARGET_HOST:-http://host.docker.internal:3000}
-    command: run /home/k6/auth.js
+      - K6_SCRIPT=${K6_SCRIPT}
+      - TARGET_ENDPOINT=${TARGET_ENDPOINT}
+      - TARGET_RPS=${TARGET_RPS}
+    command: run /home/k6/${K6_SCRIPT}
     deploy:
       resources:
         limits:
