@@ -9,7 +9,7 @@
 # Easily modifiable variables to control the load tests
 
 # Starting RPS value for the main sequence
-START_RPS=10
+START_RPS=100
 # Step to increment RPS by
 RPS_STEP=100
 # Maximum RPS value
