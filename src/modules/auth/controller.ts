@@ -11,7 +11,7 @@ import {
   RegisterDto,
   registerRequestSchema,
   updateRequestSchema,
-  UpdateDto
+  UpdateDto,
 } from './schema';
 import { authMiddleware } from '@/middlewares/auth';
 import { ValidationError } from '@/libs/errors/Validation.error';

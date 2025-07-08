@@ -61,7 +61,7 @@ export class App {
         filter: true,
         displayRequestDuration: true,
         tagsSorter: 'alpha',
-        operationsSorter: 'alpha'
+        operationsSorter: 'alpha',
       },
       staticCSP: true,
       theme: {
