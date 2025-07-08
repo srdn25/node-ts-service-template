@@ -1,61 +1,6 @@
 import { Config } from '../../../src/config';
 
-jest.mock('../../../src/config', () => {
-  const originalModule = jest.requireActual('../../../src/config');
 
-  class MockConfig {
-    values: Record<string, any>;
-
-    constructor() {
-      const env = process.env;
-
-      if (!env.MONGODB_URI) {
-        throw new Error('MONGODB_URI is required');
-      }
-
-      if (env.JWT_SECRET && env.JWT_SECRET.length < 8) {
-        throw new Error('JWT_SECRET must be at least 8 chars');
-      }
-
-      if (
-        env.JWT_REFRESH_TOKEN_SECRET &&
-        env.JWT_REFRESH_TOKEN_SECRET.length < 8
-      ) {
-        throw new Error('JWT_REFRESH_TOKEN_SECRET must be at least 8 chars');
-      }
-
-      this.values = {
-        MONGODB_URI: env.MONGODB_URI || 'mongodb://localhost:27017/test',
-        MONGODB_TLS_FILE_PATH: env.MONGODB_TLS_FILE_PATH || './certs/ca.key',
-        PORT: parseInt(env.PORT || '3000', 10),
-        NODE_ENV: env.NODE_ENV || 'development',
-        LOGGER_LEVEL: env.LOGGER_LEVEL || 'error',
-        SWAGGER_PATH: env.SWAGGER_PATH || '/docs',
-        JWT_SECRET: env.JWT_SECRET,
-        JWT_ACCESS_TOKEN_EXPIRE_TIME: parseInt(
-          env.JWT_ACCESS_TOKEN_EXPIRE_TIME || '2000',
-          10,
-        ),
-        JWT_REFRESH_TOKEN_SECRET: env.JWT_REFRESH_TOKEN_SECRET,
-        JWT_REFRESH_TOKEN_EXPIRE_TIME: parseInt(
-          env.JWT_REFRESH_TOKEN_EXPIRE_TIME || '30000',
-          10,
-        ),
-      };
-
-      if (env.NODE_ENV === 'production') {
-        console.log('Configuration loaded:', '*****');
-      } else {
-        console.log('Configuration loaded:', this.values);
-      }
-    }
-  }
-
-  return {
-    ...originalModule,
-    Config: MockConfig,
-  };
-});
 
 describe('Config', () => {
   const originalEnv = process.env;
@@ -70,6 +15,7 @@ describe('Config', () => {
     process.env.JWT_ACCESS_TOKEN_EXPIRE_TIME = '2000';
     process.env.JWT_REFRESH_TOKEN_EXPIRE_TIME = '30000';
     process.env.NODE_ENV = 'development';
+    process.env.PORT = '3000';
 
     jest.spyOn(console, 'log').mockImplementation();
   });
@@ -87,7 +33,7 @@ describe('Config', () => {
       MONGODB_TLS_FILE_PATH: './certs/ca.key',
       PORT: 3000,
       NODE_ENV: 'development',
-      LOGGER_LEVEL: 'error',
+      LOGGER_LEVEL: 'debug',
       SWAGGER_PATH: '/docs',
       JWT_SECRET: 'test-secret-key-12345678',
       JWT_ACCESS_TOKEN_EXPIRE_TIME: 2000,

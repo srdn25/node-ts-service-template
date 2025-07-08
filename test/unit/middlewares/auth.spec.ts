@@ -1,10 +1,8 @@
 import { authMiddleware } from '../../../src/middlewares/auth';
 import jwt from 'jsonwebtoken';
-import { Request, Response, NextFunction } from 'express';
+import { FastifyReply, FastifyRequest } from 'fastify';
 import { UserModel } from '../../../src/entities/user';
 import { Types } from 'mongoose';
-
-type PartialRequest = Partial<Request>;
 
 jest.mock('jsonwebtoken');
 jest.mock('../../../src/entities/user', () => ({
@@ -17,9 +15,8 @@ jest.mock('../../../src/entities/user', () => ({
 }));
 
 describe('authMiddleware', () => {
-  let mockRequest: PartialRequest;
-  let mockResponse: Partial<Response>;
-  let mockNext: jest.Mock<NextFunction>;
+  let mockRequest: Partial<FastifyRequest>;
+  let mockResponse: Partial<FastifyReply>;
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -31,10 +28,8 @@ describe('authMiddleware', () => {
 
     mockResponse = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
+      send: jest.fn(),
     };
-
-    mockNext = jest.fn();
 
     process.env = { ...originalEnv, JWT_SECRET: 'test-secret' };
 
@@ -67,9 +62,8 @@ describe('authMiddleware', () => {
     (UserModel.findOne as jest.Mock).mockResolvedValue(mockUser);
 
     await authMiddleware(
-      mockRequest as Request,
-      mockResponse as Response,
-      mockNext,
+      mockRequest as FastifyRequest,
+      mockResponse as FastifyReply,
     );
 
     expect(jwt.verify).toHaveBeenCalledWith('valid-token', 'test-secret');
@@ -82,23 +76,20 @@ describe('authMiddleware', () => {
       email: userEmail,
       name: 'Test User',
     });
-    expect(mockNext).toHaveBeenCalled();
   });
 
   it('should return 401 when no token is provided', async () => {
     mockRequest.headers = {};
 
     await authMiddleware(
-      mockRequest as Request,
-      mockResponse as Response,
-      mockNext,
+      mockRequest as FastifyRequest,
+      mockResponse as FastifyReply,
     );
 
     expect(mockResponse.status).toHaveBeenCalledWith(401);
-    expect(mockResponse.json).toHaveBeenCalledWith({
+    expect(mockResponse.send).toHaveBeenCalledWith({
       error: 'No token provided',
     });
-    expect(mockNext).not.toHaveBeenCalled();
   });
 
   it('should return 401 when token verification fails', async () => {
@@ -107,16 +98,14 @@ describe('authMiddleware', () => {
     });
 
     await authMiddleware(
-      mockRequest as Request,
-      mockResponse as Response,
-      mockNext,
+      mockRequest as FastifyRequest,
+      mockResponse as FastifyReply,
     );
 
     expect(mockResponse.status).toHaveBeenCalledWith(401);
-    expect(mockResponse.json).toHaveBeenCalledWith({
+    expect(mockResponse.send).toHaveBeenCalledWith({
       error: 'Invalid token',
     });
-    expect(mockNext).not.toHaveBeenCalled();
   });
 
   it('should return 401 when user is not found', async () => {
@@ -131,15 +120,13 @@ describe('authMiddleware', () => {
     (UserModel.findOne as jest.Mock).mockResolvedValue(null);
 
     await authMiddleware(
-      mockRequest as Request,
-      mockResponse as Response,
-      mockNext,
+      mockRequest as FastifyRequest,
+      mockResponse as FastifyReply,
     );
 
     expect(mockResponse.status).toHaveBeenCalledWith(401);
-    expect(mockResponse.json).toHaveBeenCalledWith({
+    expect(mockResponse.send).toHaveBeenCalledWith({
       error: 'User not found',
     });
-    expect(mockNext).not.toHaveBeenCalled();
   });
 });

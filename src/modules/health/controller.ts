@@ -1,8 +1,7 @@
 import os from 'node:os';
-import { Request, Response, Router } from 'express';
+import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { inject, injectable } from 'inversify';
 import { intervalToDuration } from 'date-fns';
-import { catchAsync } from '@/utils';
 import { TYPES } from '@/constants/types';
 import { TMongoClient, TLogger } from '@/types/container';
 
@@ -20,9 +19,9 @@ export class HealthController {
     @inject(TYPES.Logger) private readonly logger: TLogger,
   ) {}
 
-  public setupRoutes(router: Router) {
-    router.get('/health', this.healthCheck.bind(this));
-    router.get('/metrics', this.metrics.bind(this));
+  public setupRoutes(app: FastifyInstance) {
+    app.get('/health', this.healthCheck.bind(this));
+    app.get('/metrics', this.metrics.bind(this));
   }
 
   private formatUptime(uptimeInSeconds: number) {
@@ -82,8 +81,7 @@ export class HealthController {
    *       503:
    *         description: System is unhealthy
    */
-  @catchAsync()
-  private async healthCheck(req: Request, res: Response) {
+  private async healthCheck(req: FastifyRequest, reply: FastifyReply) {
     const mongoStatus = await this.checkMongoConnection();
 
     const systemHealth = {
@@ -94,9 +92,9 @@ export class HealthController {
     };
 
     if (systemHealth.status === 'up') {
-      res.status(200).json(systemHealth);
+      reply.status(200).send(systemHealth);
     } else {
-      res.status(503).json(systemHealth);
+      reply.status(503).send(systemHealth);
     }
   }
 
@@ -166,8 +164,7 @@ export class HealthController {
    *                     nodeVersion:
    *                       type: string
    */
-  @catchAsync()
-  private async metrics(req: Request, res: Response) {
+  private async metrics(req: FastifyRequest, reply: FastifyReply) {
     const mongoStatus = await this.checkMongoConnection();
 
     const memoryUsage = process.memoryUsage();
@@ -195,7 +192,7 @@ export class HealthController {
       },
     };
 
-    res.status(200).json(metrics);
+    reply.status(200).send(metrics);
   }
 
   private async checkMongoConnection(): Promise<{

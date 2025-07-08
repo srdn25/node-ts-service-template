@@ -5,11 +5,15 @@ services:
     image: service-template:latest
     ports:
       - '3000:3000'
+    environment:
+      NODE_OPTIONS: "--max_old_space_size=256"
     deploy:
+      replicas: 1
       resources:
         reservations:
-          cpus: '0.25'
-          memory: '128M'
+          cpus: "0.25"
+          memory: "128M"
         limits:
-          cpus: '0.5'
-          memory: '256M'
+          cpus: "0.5"
+          memory: "256M"
+    network_mode: host

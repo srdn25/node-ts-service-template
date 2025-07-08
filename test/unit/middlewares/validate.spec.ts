@@ -1,13 +1,13 @@
 import { validate } from '../../../src/middlewares/validate';
 import { z, ZodError } from 'zod';
-import { Request, Response, NextFunction } from 'express';
+import { FastifyReply, FastifyRequest } from 'fastify';
 import { BaseError } from '../../../src/libs/errors/Base.error';
 import { StatusCodes } from '../../../src/constants/types';
 
 describe('Validate Middleware', () => {
-  let mockRequest: Partial<Request>;
-  let mockResponse: Partial<Response>;
-  let mockNext: jest.Mock<NextFunction>;
+  let mockRequest: Partial<FastifyRequest>;
+  let mockResponse: Partial<FastifyReply>;
+  let mockDone: jest.Mock<() => void>;
 
   beforeEach(() => {
     mockRequest = {
@@ -19,14 +19,14 @@ describe('Validate Middleware', () => {
 
     mockResponse = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
+      send: jest.fn(),
     };
 
-    mockNext = jest.fn();
+    mockDone = jest.fn();
   });
 
   describe('validate schema', () => {
-    it('should call next() when validation passes', () => {
+    it('should call done() when validation passes', () => {
       const schema = z.object({
         body: z.object({
           name: z.string(),
@@ -43,38 +43,14 @@ describe('Validate Middleware', () => {
       };
 
       const middleware = validate(schema);
-      middleware(mockRequest as Request, mockResponse as Response, mockNext);
+      middleware(mockRequest as FastifyRequest, mockResponse as FastifyReply, mockDone);
 
-      expect(mockNext).toHaveBeenCalled();
+      expect(mockDone).toHaveBeenCalled();
       expect(mockResponse.status).not.toHaveBeenCalled();
-      expect(mockResponse.json).not.toHaveBeenCalled();
+      expect(mockResponse.send).not.toHaveBeenCalled();
     });
 
-    it('should update request with validated data', () => {
-      const schema = z.object({
-        body: z.object({
-          name: z.string().transform((val) => val.toUpperCase()),
-          email: z.string().email(),
-        }),
-        params: z.object({}),
-        query: z.object({}),
-        headers: z.object({}),
-      });
-
-      mockRequest.body = {
-        name: 'john doe',
-        email: 'john@example.com',
-      };
-
-      const middleware = validate(schema);
-      middleware(mockRequest as Request, mockResponse as Response, mockNext);
-
-      expect(mockRequest.body).toEqual({
-        name: 'JOHN DOE',
-        email: 'john@example.com',
-      });
-      expect(mockNext).toHaveBeenCalled();
-    });
+    
 
     it('should return 400 with errors when validation fails with ZodError', () => {
       const schema = z.object({
@@ -95,11 +71,11 @@ describe('Validate Middleware', () => {
       };
 
       const middleware = validate(schema);
-      middleware(mockRequest as Request, mockResponse as Response, mockNext);
+      middleware(mockRequest as FastifyRequest, mockResponse as FastifyReply, mockDone);
 
-      expect(mockNext).not.toHaveBeenCalled();
+      expect(mockDone).not.toHaveBeenCalled();
       expect(mockResponse.status).toHaveBeenCalledWith(StatusCodes.BAD_REQUEST);
-      expect(mockResponse.json).toHaveBeenCalledWith({
+      expect(mockResponse.send).toHaveBeenCalledWith({
         message: 'Validation Error',
         errors: expect.arrayContaining([
           expect.objectContaining({
@@ -118,11 +94,9 @@ describe('Validate Middleware', () => {
       };
 
       const middleware = validate(mockSchema as unknown as z.ZodSchema);
+      middleware(mockRequest as FastifyRequest, mockResponse as FastifyReply, mockDone);
 
-      expect(() => {
-        middleware(mockRequest as Request, mockResponse as Response, mockNext);
-      }).toThrow(BaseError);
-      expect(mockNext).not.toHaveBeenCalled();
+      expect(mockDone).toHaveBeenCalledWith(expect.any(BaseError));
     });
 
     it('should return 400 for non-ZodError exceptions', () => {
@@ -133,11 +107,11 @@ describe('Validate Middleware', () => {
       };
 
       const middleware = validate(mockSchema as unknown as z.ZodSchema);
-      middleware(mockRequest as Request, mockResponse as Response, mockNext);
+      middleware(mockRequest as FastifyRequest, mockResponse as FastifyReply, mockDone);
 
-      expect(mockNext).not.toHaveBeenCalled();
+      expect(mockDone).not.toHaveBeenCalled();
       expect(mockResponse.status).toHaveBeenCalledWith(StatusCodes.BAD_REQUEST);
-      expect(mockResponse.json).toHaveBeenCalledWith({
+      expect(mockResponse.send).toHaveBeenCalledWith({
         message: 'Invalid request',
       });
     });

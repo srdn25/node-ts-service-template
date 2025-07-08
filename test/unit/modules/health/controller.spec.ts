@@ -1,4 +1,4 @@
-import { Request, Response, Router } from 'express';
+import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { HealthController } from '../../../../src/modules/health/controller';
 import { TMongoClient, TLogger } from '../../../../src/types/container';
 
@@ -6,9 +6,9 @@ describe('HealthController', () => {
   let healthController: HealthController;
   let mockMongoClient: jest.Mocked<TMongoClient>;
   let mockLogger: jest.Mocked<TLogger>;
-  let mockRouter: jest.Mocked<Router>;
-  let mockRequest: Partial<Request>;
-  let mockResponse: Partial<Response>;
+  let mockRouter: jest.Mocked<FastifyInstance>;
+  let mockRequest: Partial<FastifyRequest>;
+  let mockResponse: Partial<FastifyReply>;
 
   beforeEach(() => {
     mockMongoClient = {
@@ -26,13 +26,13 @@ describe('HealthController', () => {
 
     mockRouter = {
       get: jest.fn(),
-    } as unknown as jest.Mocked<Router>;
+    } as unknown as jest.Mocked<FastifyInstance>;
 
     mockRequest = {};
 
     mockResponse = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
+      send: jest.fn(),
     };
 
     healthController = new HealthController(mockMongoClient, mockLogger);
@@ -64,7 +64,7 @@ describe('HealthController', () => {
       await healthCheck(mockRequest, mockResponse);
 
       expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith(
+      expect(mockResponse.send).toHaveBeenCalledWith(
         expect.objectContaining({
           status: 'up',
           timestamp: expect.any(String),
@@ -91,7 +91,7 @@ describe('HealthController', () => {
       await healthCheck(mockRequest, mockResponse);
 
       expect(mockResponse.status).toHaveBeenCalledWith(503);
-      expect(mockResponse.json).toHaveBeenCalledWith(
+      expect(mockResponse.send).toHaveBeenCalledWith(
         expect.objectContaining({
           status: 'down',
           mongodb: expect.objectContaining({
@@ -115,7 +115,7 @@ describe('HealthController', () => {
         error,
       );
       expect(mockResponse.status).toHaveBeenCalledWith(503);
-      expect(mockResponse.json).toHaveBeenCalledWith(
+      expect(mockResponse.send).toHaveBeenCalledWith(
         expect.objectContaining({
           status: 'down',
           mongodb: expect.objectContaining({
@@ -135,7 +135,7 @@ describe('HealthController', () => {
       await metrics(mockRequest, mockResponse);
 
       expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith(
+      expect(mockResponse.send).toHaveBeenCalledWith(
         expect.objectContaining({
           memory: expect.objectContaining({
             rss: expect.any(Number),
@@ -178,7 +178,7 @@ describe('HealthController', () => {
         'MongoDB connection failed',
         error,
       );
-      expect(mockResponse.json).toHaveBeenCalledWith(
+      expect(mockResponse.send).toHaveBeenCalledWith(
         expect.objectContaining({
           mongodb: expect.objectContaining({
             status: 'down',

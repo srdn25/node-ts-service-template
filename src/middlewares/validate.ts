@@ -1,38 +1,23 @@
 import { ZodError, type ZodSchema } from 'zod';
-import type { Request, Response, NextFunction } from 'express';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from '@/constants/types';
 import { BaseError } from '@/libs/errors/Base.error';
 
 export const validate =
-  <
-    TParams = Record<string, unknown>,
-    TQuery = Record<string, unknown>,
-    TBody = Record<string, unknown>,
-    THeaders = Record<string, unknown>,
-  >(
-    schema: ZodSchema,
-  ) =>
-  (
-    req: Request<TParams, unknown, TBody, TQuery>,
-    res: Response,
-    next: NextFunction,
-  ): void => {
+  (schema: ZodSchema) =>
+  (req: FastifyRequest, reply: FastifyReply, done: (error?: Error) => void): void => {
     try {
-      const validData = schema.parse({
+      schema.parse({
         headers: req.headers,
         params: req.params,
         query: req.query,
         body: req.body,
-      }) as { params: TParams; body: TBody; query: TQuery; headers: THeaders };
+      });
 
-      req.params = validData.params;
-      req.body = validData.body;
-      req.query = validData.query;
-
-      next();
+      done();
     } catch (error) {
       if (error instanceof ZodError) {
-        res.status(StatusCodes.BAD_REQUEST).json({
+        reply.status(StatusCodes.BAD_REQUEST).send({
           message: 'Validation Error',
           errors: error.errors.map((err) => ({
             path: err.path.join('.'),
@@ -40,10 +25,13 @@ export const validate =
           })),
         });
         return;
-      } else if (error instanceof BaseError) {
-        throw error;
+      }
+      
+      if (error instanceof BaseError) {
+        done(error);
+        return;
       }
 
-      res.status(StatusCodes.BAD_REQUEST).json({ message: 'Invalid request' });
+      reply.status(StatusCodes.BAD_REQUEST).send({ message: 'Invalid request' });
     }
   };

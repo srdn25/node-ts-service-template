@@ -20,7 +20,7 @@ afterAll(async () => {
 describe('Swagger Documentation', () => {
   describe('GET /docs', () => {
     it('should return 200 and HTML content without authentication', async () => {
-      const res = await request(serviceInstance.app).get(
+      const res = await request(serviceInstance.app.server).get(
         `${config.values.SWAGGER_PATH}/`,
       );
 
@@ -30,21 +30,21 @@ describe('Swagger Documentation', () => {
     });
 
     it('should return 200 for swagger.json without authentication', async () => {
-      const res = await request(serviceInstance.app).get(
-        `${config.values.SWAGGER_PATH}/swagger.json`,
+      const res = await request(serviceInstance.app.server).get(
+        `${config.values.SWAGGER_PATH}/json`,
       );
 
       expect(res.statusCode).toEqual(200);
       expect(res.type).toBe('application/json');
-      expect(res.body).toHaveProperty('openapi');
+      expect(res.body).toHaveProperty('swagger');
       expect(res.body).toHaveProperty('info');
       expect(res.body).toHaveProperty('paths');
       expect(res.body.info).toHaveProperty('title', 'Service Template API');
     });
 
     it('should include health and metrics endpoints in documentation', async () => {
-      const res = await request(serviceInstance.app).get(
-        `${config.values.SWAGGER_PATH}/swagger.json`,
+      const res = await request(serviceInstance.app.server).get(
+        `${config.values.SWAGGER_PATH}/json`,
       );
 
       expect(res.body.paths).toHaveProperty('/health');
@@ -54,8 +54,8 @@ describe('Swagger Documentation', () => {
     });
 
     it('should include authentication endpoints in documentation', async () => {
-      const res = await request(serviceInstance.app).get(
-        `${config.values.SWAGGER_PATH}/swagger.json`,
+      const res = await request(serviceInstance.app.server).get(
+        `${config.values.SWAGGER_PATH}/json`,
       );
 
       expect(res.body.paths).toHaveProperty('/register');

@@ -32,7 +32,7 @@ describe('Auth Endpoints', () => {
 
   describe('POST /register', () => {
     it('should register a new user and return tokens', async () => {
-      const res = await request(serviceInstance.app)
+      const res = await request(serviceInstance.app.server)
         .post('/auth/register')
         .send(testUser);
 
@@ -43,13 +43,13 @@ describe('Auth Endpoints', () => {
       authTokens = res.body;
       const users = await UserModel.find({ email: testUser.email });
       expect(users).toHaveLength(1);
-      userId = users[0]._id.toString();
+      userId = (users[0] as any)._id.toString();
     });
 
     it('should return 400 when registering with existing email', async () => {
-      await request(serviceInstance.app).post('/auth/register').send(testUser);
+      await request(serviceInstance.app.server).post('/auth/register').send(testUser);
 
-      const res = await request(serviceInstance.app)
+      const res = await request(serviceInstance.app.server)
         .post('/auth/register')
         .send(testUser);
 
@@ -63,7 +63,7 @@ describe('Auth Endpoints', () => {
         name: '', // empty name
       };
 
-      const res = await request(serviceInstance.app)
+      const res = await request(serviceInstance.app.server)
         .post('/auth/register')
         .send(invalidUser);
 
@@ -73,9 +73,9 @@ describe('Auth Endpoints', () => {
 
   describe('POST /login', () => {
     it('should login and return tokens', async () => {
-      await request(serviceInstance.app).post('/auth/register').send(testUser);
+      await request(serviceInstance.app.server).post('/auth/register').send(testUser);
 
-      const res = await request(serviceInstance.app).post('/auth/login').send({
+      const res = await request(serviceInstance.app.server).post('/auth/login').send({
         email: testUser.email,
         password: testUser.password,
       });
@@ -86,9 +86,9 @@ describe('Auth Endpoints', () => {
     });
 
     it('should return 400 with incorrect password', async () => {
-      await request(serviceInstance.app).post('/auth/register').send(testUser);
+      await request(serviceInstance.app.server).post('/auth/register').send(testUser);
 
-      const res = await request(serviceInstance.app).post('/auth/login').send({
+      const res = await request(serviceInstance.app.server).post('/auth/login').send({
         email: testUser.email,
         password: 'WrongPassword123!',
       });
@@ -97,7 +97,7 @@ describe('Auth Endpoints', () => {
     });
 
     it('should return 400 with non-existent email', async () => {
-      const res = await request(serviceInstance.app).post('/auth/login').send({
+      const res = await request(serviceInstance.app.server).post('/auth/login').send({
         email: 'nonexistent@example.com',
         password: 'Password123!',
       });
@@ -108,12 +108,12 @@ describe('Auth Endpoints', () => {
 
   describe('POST /refresh-token', () => {
     it('should refresh tokens with valid refresh token and CSRF from register response', async () => {
-      const registerRes = await request(serviceInstance.app)
+      const registerRes = await request(serviceInstance.app.server)
         .post('/auth/register')
         .send(testUser);
       const { refreshToken, csrfToken } = registerRes.body;
 
-      const res = await request(serviceInstance.app)
+      const res = await request(serviceInstance.app.server)
         .post('/auth/refresh-token')
         .set('x-csrf-token', csrfToken)
         .send({ refreshToken, email: testUser.email });
@@ -124,15 +124,15 @@ describe('Auth Endpoints', () => {
     });
 
     it('should refresh tokens with valid refresh token and CSRF from login response', async () => {
-      await request(serviceInstance.app).post('/auth/register').send(testUser);
+      await request(serviceInstance.app.server).post('/auth/register').send(testUser);
 
-      const loginRes = await request(serviceInstance.app).post('/auth/login').send({
+      const loginRes = await request(serviceInstance.app.server).post('/auth/login').send({
         email: testUser.email,
         password: testUser.password,
       });
       const { refreshToken, csrfToken } = loginRes.body;
 
-      const res = await request(serviceInstance.app)
+      const res = await request(serviceInstance.app.server)
         .post('/auth/refresh-token')
         .set('x-csrf-token', csrfToken)
         .send({ refreshToken, email: testUser.email });
@@ -143,12 +143,12 @@ describe('Auth Endpoints', () => {
     });
 
     it('should return 400 with missing CSRF token', async () => {
-      const registerRes = await request(serviceInstance.app)
+      const registerRes = await request(serviceInstance.app.server)
         .post('/auth/register')
         .send(testUser);
       const { refreshToken } = registerRes.body;
 
-      const res = await request(serviceInstance.app)
+      const res = await request(serviceInstance.app.server)
         .post('/auth/refresh-token')
         .send({ refreshToken });
 
@@ -158,7 +158,7 @@ describe('Auth Endpoints', () => {
 
   describe('PATCH /user/:userId', () => {
     it('should update user data when authenticated', async () => {
-      const registerRes = await request(serviceInstance.app)
+      const registerRes = await request(serviceInstance.app.server)
         .post('/auth/register')
         .send(testUser);
       const { accessToken } = registerRes.body;
@@ -172,7 +172,7 @@ describe('Auth Endpoints', () => {
         phone: '+7987654321',
       };
 
-      const res = await request(serviceInstance.app)
+      const res = await request(serviceInstance.app.server)
         .patch(`/auth/user/${userId}`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send(updateData);
@@ -190,7 +190,7 @@ describe('Auth Endpoints', () => {
     });
 
     it('should return 401 when not authenticated', async () => {
-      await request(serviceInstance.app).post('/auth/register').send(testUser);
+      await request(serviceInstance.app.server).post('/auth/register').send(testUser);
 
       const users = await UserModel.find({ email: testUser.email });
       const userId = users[0]._id.toString();
@@ -199,7 +199,7 @@ describe('Auth Endpoints', () => {
         name: 'Updated Name',
       };
 
-      const res = await request(serviceInstance.app)
+      const res = await request(serviceInstance.app.server)
         .patch(`/auth/user/${userId}`)
         .send(updateData);
 

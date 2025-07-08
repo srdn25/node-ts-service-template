@@ -12,3 +12,4 @@ coverage/
 upload
 /logs
 /load-test-results
+/.clinic

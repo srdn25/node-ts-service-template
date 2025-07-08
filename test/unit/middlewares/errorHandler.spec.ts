@@ -6,15 +6,14 @@ import { BaseError } from '../../../src/libs/errors/Base.error';
 import { Container } from 'inversify';
 import { TLogger } from '../../../src/types/container';
 import { TYPES } from '../../../src/constants/types';
-import { Request, Response, NextFunction } from 'express';
+import { FastifyReply, FastifyRequest } from 'fastify';
 import { ValidationError } from '../../../src/libs/errors/Validation.error';
 
 describe('Error Handlers', () => {
   let mockContainer: Container;
   let mockLogger: jest.Mocked<TLogger>;
-  let mockRequest: Partial<Request>;
-  let mockResponse: Partial<Response>;
-  let mockNext: jest.Mock<NextFunction>;
+  let mockRequest: Partial<FastifyRequest>;
+  let mockResponse: Partial<FastifyReply>;
 
   beforeEach(() => {
     mockLogger = {
@@ -29,27 +28,24 @@ describe('Error Handlers', () => {
     } as unknown as Container;
 
     mockRequest = {
-      originalUrl: '/test',
+      url: '/test',
     };
 
     mockResponse = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
+      send: jest.fn(),
     };
-
-    mockNext = jest.fn();
   });
 
   describe('notFoundHandler', () => {
-    it('should create a 404 error and pass it to next', () => {
+    it('should create a 404 error and send it', () => {
       const handler = notFoundHandler(mockContainer);
 
-      handler(mockRequest as Request, mockResponse as Response, mockNext);
+            handler(mockRequest as FastifyRequest, mockResponse as FastifyReply);
 
       expect(mockLogger.debug).toHaveBeenCalledWith('Not Found - /test');
       expect(mockResponse.status).toHaveBeenCalledWith(404);
-      expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
-      expect(mockNext.mock.calls[0][0].message).toBe('Not Found - /test');
+      expect(mockResponse.send).toHaveBeenCalledWith({ message: 'Not Found - /test' });
     });
   });
 
@@ -65,9 +61,8 @@ describe('Error Handlers', () => {
 
       handler(
         error,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext,
+        mockRequest as FastifyRequest,
+        mockResponse as FastifyReply,
       );
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
@@ -75,7 +70,7 @@ describe('Error Handlers', () => {
         error,
       );
       expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith({
+      expect(mockResponse.send).toHaveBeenCalledWith({
         status: 400,
         message: 'Test message',
         details: { code: 123 },
@@ -92,9 +87,8 @@ describe('Error Handlers', () => {
 
       handler(
         error,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext,
+        mockRequest as FastifyRequest,
+        mockResponse as FastifyReply,
       );
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
@@ -102,7 +96,7 @@ describe('Error Handlers', () => {
         error,
       );
       expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith({
+      expect(mockResponse.send).toHaveBeenCalledWith({
         status: 400,
         message: 'Validation failed',
         details: {
@@ -119,9 +113,8 @@ describe('Error Handlers', () => {
 
       handler(
         error,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext,
+        mockRequest as FastifyRequest,
+        mockResponse as FastifyReply,
       );
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
@@ -129,7 +122,7 @@ describe('Error Handlers', () => {
         error,
       );
       expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalledWith({
+      expect(mockResponse.send).toHaveBeenCalledWith({
         message: 'Regular error',
       });
     });
@@ -140,13 +133,12 @@ describe('Error Handlers', () => {
 
       handler(
         error,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext,
+        mockRequest as FastifyRequest,
+        mockResponse as FastifyReply,
       );
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalledWith({
+      expect(mockResponse.send).toHaveBeenCalledWith({
         message: 'Internal error',
       });
     });
@@ -162,9 +154,8 @@ describe('Error Handlers', () => {
 
       handler(
         error,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext,
+        mockRequest as FastifyRequest,
+        mockResponse as FastifyReply,
       );
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
@@ -172,7 +163,7 @@ describe('Error Handlers', () => {
         error,
       );
       expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalledWith({
+      expect(mockResponse.send).toHaveBeenCalledWith({
         message: 'Custom error',
       });
     });

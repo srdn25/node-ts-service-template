@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@/constants/types';
 import { TAuthService } from '@/types/container';
@@ -11,8 +11,8 @@ import {
   RegisterDto,
   registerRequestSchema,
   updateRequestSchema,
+  UpdateDto
 } from './schema';
-import { catchAsync } from '@/utils';
 import { authMiddleware } from '@/middlewares/auth';
 import { ValidationError } from '@/libs/errors/Validation.error';
 
@@ -20,65 +20,67 @@ import { ValidationError } from '@/libs/errors/Validation.error';
 export class AuthController {
   constructor(@inject(TYPES.AuthService) private authService: TAuthService) {}
 
-  public setupRoutes(router: Router) {
-    router.post(
+  public setupRoutes(app: FastifyInstance) {
+    app.post<{ Body: RegisterDto }>(
       '/auth/register',
-      validate(registerRequestSchema),
+      { preHandler: validate(registerRequestSchema) },
       this.register.bind(this),
     );
 
-    router.post('/auth/login', validate(loginRequestSchema), this.login.bind(this));
+    app.post<{ Body: LoginDto }>(
+      '/auth/login',
+      { preHandler: validate(loginRequestSchema) },
+      this.login.bind(this),
+    );
 
-    router.patch(
+    app.patch<{ Body: UpdateDto }>(
       '/auth/user/:userId',
-      authMiddleware,
-      validate(updateRequestSchema),
+      { preHandler: [authMiddleware, validate(updateRequestSchema)] },
       this.update.bind(this),
     );
 
-    router.post(
+    app.post<{ Body: RefreshAuthTokenDto['body'] }>(
       '/auth/refresh-token',
-      validate(refreshAuthTokenSchema),
+      { preHandler: validate(refreshAuthTokenSchema) },
       this.refresToken.bind(this),
     );
   }
 
-  @catchAsync()
   private async register(
-    req: Request<unknown, unknown, RegisterDto>,
-    res: Response,
+    req: FastifyRequest<{ Body: RegisterDto }>,
+    reply: FastifyReply,
   ) {
     const tokens = await this.authService.register(req.body);
-    res.status(201).json(tokens);
+    reply.status(201).send(tokens);
   }
 
-  @catchAsync()
-  private async login(req: Request<unknown, unknown, LoginDto>, res: Response) {
+  private async login(
+    req: FastifyRequest<{ Body: LoginDto }>,
+    reply: FastifyReply,
+  ) {
     const tokens = await this.authService.login(req.body);
-    res.json(tokens);
+    reply.send(tokens);
   }
 
-  @catchAsync()
   private async update(
-    req: Request<unknown, unknown, LoginDto>,
-    res: Response,
+    req: FastifyRequest<{ Body: UpdateDto }>,
+    reply: FastifyReply,
   ) {
-    const result = await this.authService.update(req.user.email, req.body);
-    res.json(result);
+    const result = await this.authService.update(req.user!.email, req.body);
+    reply.send(result);
   }
 
-  @catchAsync()
   private async refresToken(
-    req: Request<unknown, unknown, RefreshAuthTokenDto['body'], unknown>,
-    res: Response,
+    req: FastifyRequest<{ Body: RefreshAuthTokenDto['body'] }>,
+    reply: FastifyReply,
   ) {
-    const csrfToken = req.header('x-csrf-token');
+    const csrfToken = req.headers['x-csrf-token'] as string;
 
     if (!csrfToken) {
       throw new ValidationError(this.constructor.name, 'Invalid CSRF token');
     }
 
     const tokens = await this.authService.refreshAuthToken(req.body, csrfToken);
-    res.json(tokens);
+    reply.send(tokens);
   }
 }

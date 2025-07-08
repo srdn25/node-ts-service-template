@@ -24,7 +24,7 @@ const clean = (pathtoClean) => ({
 
 async function buildNode({ excludeFileExtensions, ...options }, source) {
   const toDelete = options.outdir ?? options.outfile;
-  const excludeFileExtensionsArr = ['.md', ...(excludeFileExtensions ?? [])];
+  const excludeFileExtensionsArr = ['.md', '.svg', ...(excludeFileExtensions ?? [])];
 
   await build({
     entryPoints: await excludeSpecFiles(source, excludeFileExtensionsArr),
@@ -75,4 +75,14 @@ module.exports = buildNode(
     excludeFileExtensions: ['.MD', '.key', '.pem'],
   },
   sourcePath,
-);
+).then(() => {
+  // Copy static assets
+  const staticSourcePath = path.resolve('./src/static');
+  const staticDestPath = path.resolve('./dist/static');
+  fs.cpSync(staticSourcePath, staticDestPath, { recursive: true });
+
+  // Copy Swagger UI static assets
+  const swaggerUiSource = path.resolve('./node_modules/@fastify/swagger-ui/static');
+  const swaggerUiDest = path.resolve('./dist/static/swagger-ui');
+  fs.cpSync(swaggerUiSource, swaggerUiDest, { recursive: true });
+});
