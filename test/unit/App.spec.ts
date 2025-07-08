@@ -6,45 +6,44 @@ import {
   TAuthController,
   THealthController,
 } from '../../src/types/container';
-import { Server } from 'http';
-import express from 'express';
-import swaggerUi from 'swagger-ui-express';
+import { fastify, FastifyInstance } from 'fastify';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import {
   errorHandler,
   notFoundHandler,
 } from '../../src/middlewares/errorHandler';
 import { container } from '../../src/container';
 
-jest.mock('express', () => {
-  const mockRouter = {
-    use: jest.fn(),
-    get: jest.fn(),
-  };
-
-  const mockExpress: any = jest.fn(() => mockRouter);
-  mockExpress.Router = jest.fn().mockReturnValue(mockRouter);
-  mockExpress.json = jest.fn().mockReturnValue('jsonMiddleware');
-
-  return mockExpress;
-});
-
-jest.mock('swagger-ui-express', () => ({
-  serve: 'swaggerServe',
-  setup: jest.fn().mockReturnValue('swaggerSetup'),
+jest.mock('fastify', () => ({
+  __esModule: true,
+  fastify: jest.fn(),
 }));
+
+jest.mock('@fastify/swagger-ui', () => jest.fn());
 
 jest.mock('../../swagger', () => ({
   specs: { swagger: '2.0' },
 }));
 
 jest.mock('../../src/middlewares/errorHandler', () => ({
-  errorHandler: jest.fn().mockReturnValue('errorHandlerMiddleware'),
-  notFoundHandler: jest.fn().mockReturnValue('notFoundHandlerMiddleware'),
+  errorHandler: jest.fn(() => (err: any, req: any, reply: any) => {}),
+  notFoundHandler: jest.fn(() => (req: any, reply: any) => {}),
 }));
 
 jest.mock('../../src/container', () => ({
   container: {
-    get: jest.fn(),
+    get: jest.fn((type) => {
+      if (type === 'Logger') {
+        return {
+          info: jest.fn(),
+          error: jest.fn(),
+          warn: jest.fn(),
+          debug: jest.fn(),
+        };
+      }
+      return {};
+    }),
   },
 }));
 
@@ -55,11 +54,11 @@ describe('App', () => {
   let mockLogger: jest.Mocked<TLogger>;
   let mockAuthController: jest.Mocked<TAuthController>;
   let mockHealthController: jest.Mocked<THealthController>;
-  let mockExpressApp: any;
-  let mockServer: Partial<Server>;
-  let mockRouter: any;
+  
+  let mockFastifyApp: jest.Mocked<FastifyInstance>;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     mockConfig = {
       values: {
         PORT: 3000,
@@ -87,6 +86,18 @@ describe('App', () => {
       setupRoutes: jest.fn(),
     } as unknown as jest.Mocked<THealthController>;
 
+    mockFastifyApp = {
+      register: jest.fn().mockReturnThis(),
+      setErrorHandler: jest.fn().mockReturnThis(),
+      setNotFoundHandler: jest.fn().mockReturnThis(),
+      listen: jest.fn().mockResolvedValue(undefined),
+      close: jest.fn().mockResolvedValue(undefined),
+      get: jest.fn().mockReturnThis(),
+    } as unknown as jest.Mocked<FastifyInstance>;
+
+    // Mock the fastify function itself to return our mockFastifyApp
+    (fastify as unknown as jest.Mock).mockImplementation(() => mockFastifyApp);
+
     app = new App(
       mockConfig,
       mockMongoClient,
@@ -94,27 +105,13 @@ describe('App', () => {
       mockHealthController,
       mockLogger,
     );
-
-    mockServer = {
-      close: jest.fn().mockImplementation((callback) => {
-        if (callback) callback(null);
-        return mockServer;
-      }),
-    };
-
-    mockExpressApp = app.app;
-    mockExpressApp.listen = jest.fn().mockReturnValue(mockServer);
-    mockRouter = express.Router();
-
-    jest.clearAllMocks();
   });
 
   describe('setupMiddlewares', () => {
-    it('should set up express json middleware', async () => {
+    it('should not set up any specific middlewares as Fastify has its own JSON body parser', async () => {
       await app.start();
 
-      expect(express.json).toHaveBeenCalled();
-      expect(mockExpressApp.use).toHaveBeenCalledWith('jsonMiddleware');
+      expect(mockFastifyApp.register).not.toHaveBeenCalledWith(expect.any(Function));
     });
   });
 
@@ -122,10 +119,8 @@ describe('App', () => {
     it('should set up routes for all controllers', async () => {
       await app.start();
 
-      expect(mockHealthController.setupRoutes).toHaveBeenCalledWith(mockRouter);
-      expect(mockAuthController.setupRoutes).toHaveBeenCalledWith(mockRouter);
-
-      expect(mockExpressApp.use).toHaveBeenCalledWith(mockRouter);
+      expect(mockHealthController.setupRoutes).toHaveBeenCalledWith(mockFastifyApp);
+      expect(mockAuthController.setupRoutes).toHaveBeenCalledWith(mockFastifyApp);
     });
   });
 
@@ -137,50 +132,24 @@ describe('App', () => {
         `Setting up Swagger documentation at /docs`,
       );
 
-      expect(mockExpressApp.get).toHaveBeenCalledWith(
-        '/docs/swagger.json',
-        expect.any(Function),
-      );
+      expect(mockFastifyApp.register).toHaveBeenCalledWith(swagger, {
+        swagger: { swagger: '2.0' },
+      });
 
-      expect(mockExpressApp.use).toHaveBeenCalledWith('/docs', 'swaggerServe');
-      expect(swaggerUi.setup).toHaveBeenCalledWith(
-        { swagger: '2.0' },
-        expect.objectContaining({
-          explorer: true,
-          customSiteTitle: 'NorthStar Invoice API',
+      expect(mockFastifyApp.register).toHaveBeenCalledWith(swaggerUi, {
+        routePrefix: '/docs',
+        uiConfig: expect.objectContaining({
+          docExpansion: 'list',
+          filter: true,
+          displayRequestDuration: true,
+          tagsSorter: 'alpha',
+          operationsSorter: 'alpha',
         }),
-      );
-      expect(mockExpressApp.get).toHaveBeenCalledWith('/docs', 'swaggerSetup');
-    });
-
-    it('should handle swagger.json request correctly', async () => {
-      await app.start();
-
-      const calls = mockExpressApp.get.mock.calls;
-      const swaggerJsonRouteCall = calls.find(
-        (call: Array<any>) => call[0] === '/docs/swagger.json',
-      );
-      const swaggerJsonHandler = swaggerJsonRouteCall
-        ? swaggerJsonRouteCall[1]
-        : null;
-
-      expect(swaggerJsonHandler).toBeDefined();
-
-      if (swaggerJsonHandler) {
-        const mockReq = {};
-        const mockRes = {
-          setHeader: jest.fn(),
-          send: jest.fn(),
-        };
-
-        swaggerJsonHandler(mockReq, mockRes);
-
-        expect(mockRes.setHeader).toHaveBeenCalledWith(
-          'Content-Type',
-          'application/json',
-        );
-        expect(mockRes.send).toHaveBeenCalledWith({ swagger: '2.0' });
-      }
+        staticCSP: true,
+        theme: {
+          title: 'Service Template API',
+        },
+      });
     });
   });
 
@@ -188,13 +157,8 @@ describe('App', () => {
     it('should set up error handler and not found handler middlewares', async () => {
       await app.start();
 
-      expect(errorHandler).toHaveBeenCalledWith(container);
-      expect(notFoundHandler).toHaveBeenCalledWith(container);
-
-      expect(mockExpressApp.use).toHaveBeenCalledWith('errorHandlerMiddleware');
-      expect(mockExpressApp.use).toHaveBeenCalledWith(
-        'notFoundHandlerMiddleware',
-      );
+      expect(mockFastifyApp.setErrorHandler).toHaveBeenCalledWith(expect.any(Function));
+      expect(mockFastifyApp.setNotFoundHandler).toHaveBeenCalledWith(expect.any(Function));
     });
   });
 
@@ -202,20 +166,13 @@ describe('App', () => {
     it('should setup middlewares, swagger, routes, error handlers and start the server', async () => {
       await app.start();
 
-      const useCalls = mockExpressApp.use.mock.calls;
-
-      expect(useCalls[0][0]).toBe('jsonMiddleware');
-
       expect(mockMongoClient.connect).toHaveBeenCalled();
 
-      expect(mockExpressApp.listen).toHaveBeenCalledWith(
-        3000,
-        '0.0.0.0',
-        expect.any(Function),
-      );
+      expect(mockFastifyApp.listen).toHaveBeenCalledWith({
+        port: 3000,
+        host: '0.0.0.0',
+      });
 
-      const listenCallback = mockExpressApp.listen.mock.calls[0][2];
-      listenCallback();
       expect(mockLogger.info).toHaveBeenCalledWith(
         'Server running on port 3000',
       );
@@ -228,7 +185,7 @@ describe('App', () => {
 
       await app.stop();
 
-      expect(mockServer.close).toHaveBeenCalled();
+      expect(mockFastifyApp.close).toHaveBeenCalled();
 
       expect(mockMongoClient.disconnect).toHaveBeenCalled();
 
@@ -238,10 +195,9 @@ describe('App', () => {
     });
 
     it('should handle case when server is not running', async () => {
+      (app as any).app = null;
       await app.stop();
-
-      expect(mockServer.close).not.toHaveBeenCalled();
-
+      expect(mockFastifyApp.close).not.toHaveBeenCalled();
       expect(mockMongoClient.disconnect).toHaveBeenCalled();
     });
   });

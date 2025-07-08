@@ -1,43 +1,49 @@
-import { Request, Response, NextFunction } from 'express';
+import { DatabaseErrorCatch } from '../../../src/utils';
+import { BaseError } from '../../../src/libs/errors/Base.error';
+import { MongooseError } from 'mongoose';
+import { ValidationError } from '../../../src/libs/errors/Validation.error';
+import { MongooseErrorHandler } from '../../../src/libs/errors/Database.error';
 
-const mockCatchAsyncImplementation = jest.fn();
-const mockDatabaseErrorCatchImplementation = jest.fn();
+describe('DatabaseErrorCatch', () => {
+  class TestClass {
+    @DatabaseErrorCatch
+    async testMethod(shouldThrow: boolean, errorType?: string): Promise<string> {
+      if (shouldThrow) {
+        if (errorType === 'BaseError') {
+          throw new BaseError('BaseError', 'Test BaseError', {}, 400);
+        } else if (errorType === 'ValidationError') {
+          const validationError = new MongooseError('Validation failed');
+          validationError.name = 'ValidationError';
+          throw validationError;
+        } else {
+          throw new Error('Generic Error');
+        }
+      }
+      return 'success';
+    }
+  }
 
-jest.mock('../../../src/utils', () => ({
-  catchAsync: () => mockCatchAsyncImplementation,
-  DatabaseErrorCatch: () => mockDatabaseErrorCatchImplementation,
-}));
+  let testInstance: TestClass;
 
-describe('Utils', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    testInstance = new TestClass();
   });
 
-  describe('catchAsync', () => {
-    it('should properly call the decorated method', () => {
-      const mockReq = {} as Request;
-      const mockRes = {} as Response;
-      const mockNext = jest.fn() as NextFunction;
-
-      mockCatchAsyncImplementation(mockReq, mockRes, mockNext);
-
-      expect(mockCatchAsyncImplementation).toHaveBeenCalledWith(
-        mockReq,
-        mockRes,
-        mockNext,
-      );
-    });
+  it('should return success if no error is thrown', async () => {
+    await expect(testInstance.testMethod(false)).resolves.toBe('success');
   });
 
-  describe('DatabaseErrorCatch', () => {
-    it('should properly call the decorated method', () => {
-      const mockArgs = { id: '123' };
+  it('should re-throw BaseError instances', async () => {
+    await expect(testInstance.testMethod(true, 'BaseError')).rejects.toBeInstanceOf(BaseError);
+  });
 
-      mockDatabaseErrorCatchImplementation(mockArgs);
+  it('should catch and re-throw Mongoose ValidationError as MongooseErrorHandler', async () => {
+    await expect(testInstance.testMethod(true, 'ValidationError')).rejects.toBeInstanceOf(MongooseErrorHandler);
+  });
 
-      expect(mockDatabaseErrorCatchImplementation).toHaveBeenCalledWith(
-        mockArgs,
-      );
-    });
+  it('should catch and re-throw generic errors as MongooseErrorHandler', async () => {
+    await expect(testInstance.testMethod(true)).rejects.toBeInstanceOf(MongooseErrorHandler);
   });
 });
+
+// TODO: Add tests for catchAsync once it's implemented in src/utils/index.ts

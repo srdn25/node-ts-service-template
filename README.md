@@ -184,6 +184,11 @@ Note: The JWT token expires after some time. If you get an unauthorized error, r
 
 This project uses [k6](https://k6.io/) for load testing.
 
+## Performance Testing
+
+For detailed information on how to perform performance testing using `clinic doctor` and `autocannon`, refer to the [Performance Testing Documentation](./docs/performance-testing.md).
+
+
 ### Running the Load Tests
 
 The easiest way to run the load tests is to use the provided npm script:

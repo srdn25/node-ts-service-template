@@ -38,33 +38,7 @@ const options: swaggerJsdoc.Options = {
         },
       },
     },
-    security: [
-      {
-        BearerAuth: [],
-      },
-    ],
-    paths: {
-      '/docs': {
-        get: {
-          security: [],
-          responses: {
-            '200': {
-              description: 'Swagger UI',
-            },
-          },
-        },
-      },
-      '/docs/swagger.json': {
-        get: {
-          security: [],
-          responses: {
-            '200': {
-              description: 'OpenAPI specification',
-            },
-          },
-        },
-      },
-    },
+    
   },
   apis: ['./src/modules/**/*.ts', './src/entities/*.ts', './swagger/**/*.yaml'],
 };

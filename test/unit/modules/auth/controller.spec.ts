@@ -1,4 +1,4 @@
-import { Request, Response, Router } from 'express';
+import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { AuthController } from '../../../../src/modules/auth/controller';
 import { TYPES } from '../../../../src/constants/types';
 import { TAuthService } from '../../../../src/types/container';
@@ -28,8 +28,8 @@ jest.mock('../../../../src/middlewares/validate', () => ({
   validate: jest
     .fn()
     .mockImplementation(
-      (schema) => (req: Request, res: Response, next: Function) => {
-        next();
+      (schema) => (req: FastifyRequest, reply: FastifyReply, done: () => void) => {
+        done();
       },
     ),
 }));
@@ -37,7 +37,7 @@ jest.mock('../../../../src/middlewares/validate', () => ({
 jest.mock('../../../../src/middlewares/auth', () => ({
   authMiddleware: jest
     .fn()
-    .mockImplementation((req: any, res: Response, next: Function) => {
+    .mockImplementation((req: any, reply: any, done: () => void) => {
       req.user = {
         _id: new MongoObjectId(),
         email: 'test@example.com',
@@ -45,16 +45,16 @@ jest.mock('../../../../src/middlewares/auth', () => ({
         password: 'hashed_password',
         address: 'Test Address',
       };
-      next();
+      done();
     }),
 }));
 
 describe('AuthController', () => {
   let authController: AuthController;
   let mockAuthService: any;
-  let mockRouter: Router;
-  let mockRequest: Partial<Request> & { user?: any };
-  let mockResponse: Partial<Response>;
+  let mockRouter: FastifyInstance;
+  let mockRequest: Partial<FastifyRequest> & { user?: any };
+  let mockResponse: Partial<FastifyReply>;
 
   beforeEach(() => {
     mockAuthService = {
@@ -84,16 +84,16 @@ describe('AuthController', () => {
     mockRouter = {
       post: jest.fn(),
       patch: jest.fn(),
-    } as unknown as Router;
+    } as unknown as FastifyInstance;
 
     mockRequest = {
       body: {},
-      header: jest.fn().mockReturnValue('mock-csrf-token'),
+      headers: { 'x-csrf-token': 'mock-csrf-token' } as Record<string, string>,
     };
 
     mockResponse = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
     };
   });
 
@@ -106,26 +106,25 @@ describe('AuthController', () => {
 
       expect(mockRouter.post).toHaveBeenCalledWith(
         '/auth/register',
-        expect.any(Function),
+        { preHandler: expect.any(Function) },
         expect.any(Function),
       );
 
       expect(mockRouter.post).toHaveBeenCalledWith(
         '/auth/login',
-        expect.any(Function),
+        { preHandler: expect.any(Function) },
         expect.any(Function),
       );
 
       expect(mockRouter.post).toHaveBeenCalledWith(
         '/auth/refresh-token',
-        expect.any(Function),
+        { preHandler: expect.any(Function) },
         expect.any(Function),
       );
 
       expect(mockRouter.patch).toHaveBeenCalledWith(
         '/auth/user/:userId',
-        expect.any(Function),
-        expect.any(Function),
+        { preHandler: expect.any(Array) },
         expect.any(Function),
       );
     });
@@ -143,12 +142,12 @@ describe('AuthController', () => {
       const registerMethod = (authController as any).register.bind(
         authController,
       );
-      await registerMethod(mockRequest as Request, mockResponse as Response);
+      await registerMethod(mockRequest as FastifyRequest, mockResponse as FastifyReply);
 
       expect(mockAuthService.register).toHaveBeenCalledWith(mockRequest.body);
 
       expect(mockResponse.status).toHaveBeenCalledWith(201);
-      expect(mockResponse.json).toHaveBeenCalledWith({
+      expect(mockResponse.send).toHaveBeenCalledWith({
         accessToken: 'mock-access-token',
         refreshToken: 'mock-refresh-token',
         csrfToken: 'mock-csrf-token',
@@ -164,11 +163,11 @@ describe('AuthController', () => {
       };
 
       const loginMethod = (authController as any).login.bind(authController);
-      await loginMethod(mockRequest as Request, mockResponse as Response);
+      await loginMethod(mockRequest as FastifyRequest, mockResponse as FastifyReply);
 
       expect(mockAuthService.login).toHaveBeenCalledWith(mockRequest.body);
 
-      expect(mockResponse.json).toHaveBeenCalledWith({
+      expect(mockResponse.send).toHaveBeenCalledWith({
         accessToken: 'mock-access-token',
         refreshToken: 'mock-refresh-token',
         csrfToken: 'mock-csrf-token',
@@ -191,14 +190,14 @@ describe('AuthController', () => {
       };
 
       const updateMethod = (authController as any).update.bind(authController);
-      await updateMethod(mockRequest as Request, mockResponse as Response);
+      await updateMethod(mockRequest as FastifyRequest, mockResponse as FastifyReply);
 
       expect(mockAuthService.update).toHaveBeenCalledWith(
         'test@example.com',
         mockRequest.body,
       );
 
-      expect(mockResponse.json).toHaveBeenCalledWith({
+      expect(mockResponse.send).toHaveBeenCalledWith({
         name: 'Updated Name',
         email: 'test@example.com',
       });
@@ -216,18 +215,18 @@ describe('AuthController', () => {
         authController,
       );
       await refreshTokenMethod(
-        mockRequest as Request,
-        mockResponse as Response,
+        mockRequest as FastifyRequest,
+        mockResponse as FastifyReply,
       );
 
-      expect(mockRequest.header).toHaveBeenCalledWith('x-csrf-token');
+      expect(mockRequest.headers!['x-csrf-token']).toEqual('mock-csrf-token');
 
       expect(mockAuthService.refreshAuthToken).toHaveBeenCalledWith(
         mockRequest.body,
         'mock-csrf-token',
       );
 
-      expect(mockResponse.json).toHaveBeenCalledWith({
+      expect(mockResponse.send).toHaveBeenCalledWith({
         accessToken: 'new-access-token',
         refreshToken: 'new-refresh-token',
         csrfToken: 'new-csrf-token',
@@ -235,7 +234,7 @@ describe('AuthController', () => {
     });
 
     it('should throw ValidationError when csrf token is missing', async () => {
-      (mockRequest.header as jest.Mock).mockReturnValue(undefined);
+      mockRequest.headers = {};
 
       mockRequest.body = {
         refreshToken: 'old-refresh-token',
@@ -248,8 +247,8 @@ describe('AuthController', () => {
 
       await expect(async () => {
         await refreshTokenMethod(
-          mockRequest as Request,
-          mockResponse as Response,
+          mockRequest as FastifyRequest,
+          mockResponse as FastifyReply,
         );
       }).rejects.toThrow(ValidationError);
     });

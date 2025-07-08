@@ -8,7 +8,7 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
-  LOGGER_LEVEL: z.enum(['info', 'warn', 'error', 'debug']).default('error'),
+  LOGGER_LEVEL: z.enum(['info', 'warn', 'error', 'debug']).default('debug'),
   LOGGER_ES_URL: z.string().min(1).optional(),
   LOGGER_FILE_PATH: z.string().min(1).optional(),
   SWAGGER_PATH: z.string().default('/docs'),

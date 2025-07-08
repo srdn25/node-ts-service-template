@@ -1,21 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 import { BaseError } from '@/libs/errors/Base.error';
 import { MongooseErrorHandler } from '@/libs/errors/Database.error';
 import { Error } from 'mongoose';
-
-export function catchAsync() {
-  return function <Args extends unknown[], R>(
-    target: object,
-    propertyName: string,
-    descriptor: TypedPropertyDescriptor<(...args: Args) => Promise<R>>,
-  ) {
-    const originalMethod = descriptor.value!;
-    descriptor.value = function (...args: Args): Promise<R> {
-      const errorHandler = args[2] as (err: unknown) => Promise<R> | R;
-      return originalMethod.apply(this, args).catch(errorHandler) as Promise<R>;
-    };
-  };
-}
 
 export function DatabaseErrorCatch<Args extends unknown[], R>(
   target: object,

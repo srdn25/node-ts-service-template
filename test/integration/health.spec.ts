@@ -17,7 +17,7 @@ afterAll(async () => {
 describe('Health API', () => {
   describe('GET /health', () => {
     it('should return 200 and health information', async () => {
-      const res = await request(serviceInstance.app).get('/health');
+      const res = await request(serviceInstance.app.server).get('/health');
 
       expect(res.statusCode).toEqual(200);
       expect(res.body).toHaveProperty('status');
@@ -33,7 +33,7 @@ describe('Health API', () => {
     });
 
     it('should return "up" status when service is healthy', async () => {
-      const res = await request(serviceInstance.app).get('/health');
+      const res = await request(serviceInstance.app.server).get('/health');
 
       expect(res.statusCode).toEqual(200);
       expect(res.body.status).toEqual('up');
@@ -45,7 +45,7 @@ describe('Health API', () => {
 describe('Metrics API', () => {
   describe('GET /metrics', () => {
     it('should return 200 and metrics information', async () => {
-      const res = await request(serviceInstance.app).get('/metrics');
+      const res = await request(serviceInstance.app.server).get('/metrics');
 
       expect(res.statusCode).toEqual(200);
       expect(res.body).toHaveProperty('memory');
@@ -66,7 +66,7 @@ describe('Metrics API', () => {
     });
 
     it('should return valid metrics data', async () => {
-      const res = await request(serviceInstance.app).get('/metrics');
+      const res = await request(serviceInstance.app.server).get('/metrics');
 
       expect(res.statusCode).toEqual(200);
 

@@ -51,7 +51,7 @@ describe('IoC Container', () => {
     expect(healthController).toBeDefined();
   });
 
-  it('should ensure singletons are the same instance', () => {
+  it('should ensure singletons are the same instance and transient are different', () => {
     const config1 = container.get(TYPES.Config);
     const config2 = container.get(TYPES.Config);
     expect(config1).toBe(config2);
@@ -66,6 +66,6 @@ describe('IoC Container', () => {
 
     const app1 = container.get(TYPES.App);
     const app2 = container.get(TYPES.App);
-    expect(app1).toBe(app2);
+    expect(app1).not.toBe(app2);
   });
 });

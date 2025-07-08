@@ -1,5 +1,7 @@
-import type { Server } from 'node:http';
-import express, { Express, Router } from 'express';
+import path from 'node:path';
+import { FastifyInstance, fastify } from 'fastify';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import { inject, injectable } from 'inversify';
 import { TYPES } from './constants/types';
 import {
@@ -11,14 +13,11 @@ import {
 } from './types/container';
 import { notFoundHandler, errorHandler } from './middlewares/errorHandler';
 import { container } from './container';
-import swaggerUi from 'swagger-ui-express';
 import { specs } from '../swagger';
 
 @injectable()
 export class App {
-  public readonly app: Express;
-  private server?: Server;
-  private readonly router: Router = Router({ mergeParams: true });
+  public readonly app: FastifyInstance;
 
   constructor(
     @inject(TYPES.Config) private readonly config: TConfig,
@@ -32,67 +31,65 @@ export class App {
 
     @inject(TYPES.Logger) private readonly logger: TLogger,
   ) {
-    this.app = express();
+    this.app = fastify();
   }
 
   private setupMiddlewares() {
-    this.app.use(express.json());
+    // Fastify has its own JSON body parser
   }
 
   private setupRoutes() {
-    this.healthController.setupRoutes(this.router);
-    this.authController.setupRoutes(this.router);
-    this.app.use(this.router);
+    this.healthController.setupRoutes(this.app);
+    this.authController.setupRoutes(this.app);
   }
 
-  private setupSwagger() {
+  private async setupSwagger() {
     const swaggerPath = this.config.values.SWAGGER_PATH;
     this.logger.info(`Setting up Swagger documentation at ${swaggerPath}`);
 
-    const options = {
-      explorer: true,
-      customCss: '.swagger-ui .topbar { display: none }',
-      customSiteTitle: 'NorthStar Invoice API',
-      swaggerOptions: {
-        persistAuthorization: true,
+    await this.app.register(swagger, {
+      swagger: specs,
+    });
+
+    await this.app.register(swaggerUi, {
+      routePrefix: swaggerPath,
+      baseDir: process.env.NODE_ENV === 'production'
+        ? path.join(__dirname, 'static', 'swagger-ui')
+        : undefined,
+      uiConfig: {
         docExpansion: 'list',
         filter: true,
         displayRequestDuration: true,
         tagsSorter: 'alpha',
         operationsSorter: 'alpha',
       },
-    };
-
-    this.app.get(`${swaggerPath}/swagger.json`, (req, res) => {
-      res.setHeader('Content-Type', 'application/json');
-      res.send(specs);
+      staticCSP: true,
+      theme: {
+        title: 'Service Template API',
+      },
     });
-
-    this.app.use(swaggerPath, swaggerUi.serve);
-    this.app.get(swaggerPath, swaggerUi.setup(specs, options));
   }
 
   private setupHandlerMiddlewares() {
-    this.app.use(errorHandler(container));
-    this.app.use(notFoundHandler(container));
+    this.app.setErrorHandler(errorHandler(container));
+    this.app.setNotFoundHandler(notFoundHandler(container));
   }
 
   public async start() {
     this.setupMiddlewares();
-    this.setupSwagger();
+    await this.setupSwagger();
     this.setupRoutes();
     this.setupHandlerMiddlewares();
 
     await this.mongoClient.connect();
     // Added 0.0.0.0 to listen on all interfaces. It is needed for load tests to work
-    this.server = this.app.listen(this.config.values.PORT, '0.0.0.0', () =>
-      this.logger.info(`Server running on port ${this.config.values.PORT}`),
-    );
+    await this.app.listen({ port: this.config.values.PORT, host: '0.0.0.0' });
+    this.logger.info(`Server running on port ${this.config.values.PORT}`);
   }
 
   public async stop() {
-    if (this.server) {
-      await new Promise((resolve) => this.server!.close(resolve));
+    if (this.app) {
+      await this.app.close();
       this.logger.info('Server stopped');
     }
     this.logger.info('Disconnecting from mongo');

@@ -27,7 +27,7 @@ container
   .inSingletonScope();
 container.bind<TAuthService>(TYPES.AuthService).to(AuthService);
 container.bind<TAuthController>(TYPES.AuthController).to(AuthController);
-container.bind<TApp>(TYPES.App).to(App).inSingletonScope();
+container.bind<TApp>(TYPES.App).to(App).inTransientScope();
 container.bind<THealthController>(TYPES.HealthController).to(HealthController);
 
 export { container };
